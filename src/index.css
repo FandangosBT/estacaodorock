@@ -2,41 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Festival de Rock 2025 - Design System 
+Rock/Cyberpunk theme with neon colors and futuristic vibes
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Dark rock background */
+    --background: 240 10% 5%;
+    --foreground: 300 100% 90%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Card system with dark rock theme */
+    --card: 240 15% 8%;
+    --card-foreground: 300 100% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 240 15% 8%;
+    --popover-foreground: 300 100% 95%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Electric Purple Neon */
+    --primary: 270 100% 70%;
+    --primary-foreground: 240 10% 5%;
+    --primary-glow: 270 100% 80%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Electric Red Rock */
+    --secondary: 350 100% 60%;
+    --secondary-foreground: 240 10% 5%;
+    --secondary-glow: 350 100% 70%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted - Dark gray for subtle elements */
+    --muted: 240 15% 15%;
+    --muted-foreground: 240 10% 70%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Cyber Blue */
+    --accent: 200 100% 60%;
+    --accent-foreground: 240 10% 5%;
+    --accent-glow: 200 100% 70%;
+
+    /* Electric Green for success/highlights */
+    --electric: 120 100% 50%;
+    --electric-foreground: 240 10% 5%;
+    --electric-glow: 120 100% 60%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 240 10% 5%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 240 15% 20%;
+    --input: 240 15% 12%;
+    --ring: 270 100% 70%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Custom gradients for festival theme */
+    --gradient-hero: linear-gradient(135deg, hsl(270 100% 30%), hsl(350 100% 40%), hsl(200 100% 40%));
+    --gradient-neon: linear-gradient(90deg, hsl(270 100% 70%), hsl(350 100% 60%));
+    --gradient-cyber: linear-gradient(45deg, hsl(200 100% 60%), hsl(270 100% 70%));
+    --gradient-dark: linear-gradient(180deg, hsl(240 15% 8%), hsl(240 10% 5%));
+    
+    /* Neon glow effects */
+    --glow-primary: 0 0 20px hsl(270 100% 70% / 0.5), 0 0 40px hsl(270 100% 70% / 0.3);
+    --glow-secondary: 0 0 20px hsl(350 100% 60% / 0.5), 0 0 40px hsl(350 100% 60% / 0.3);
+    --glow-accent: 0 0 20px hsl(200 100% 60% / 0.5), 0 0 40px hsl(200 100% 60% / 0.3);
+    --glow-electric: 0 0 20px hsl(120 100% 50% / 0.5), 0 0 40px hsl(120 100% 50% / 0.3);
+
+    /* Smooth transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 0 0% 98%;
 
@@ -100,6 +131,155 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  /* Neon glow button variants */
+  .btn-neon-primary {
+    @apply bg-primary text-primary-foreground px-8 py-4 rounded-lg font-bold tracking-wide uppercase;
+    @apply transition-all duration-300 hover:scale-105;
+    box-shadow: var(--glow-primary);
+    border: 2px solid hsl(var(--primary));
+  }
+  
+  .btn-neon-primary:hover {
+    @apply brightness-110;
+    box-shadow: var(--glow-primary), 0 0 60px hsl(var(--primary) / 0.4);
+  }
+
+  .btn-neon-secondary {
+    @apply bg-secondary text-secondary-foreground px-8 py-4 rounded-lg font-bold tracking-wide uppercase;
+    @apply transition-all duration-300 hover:scale-105;
+    box-shadow: var(--glow-secondary);
+    border: 2px solid hsl(var(--secondary));
+  }
+
+  .btn-neon-secondary:hover {
+    @apply brightness-110;
+    box-shadow: var(--glow-secondary), 0 0 60px hsl(var(--secondary) / 0.4);
+  }
+
+  .btn-neon-accent {
+    @apply bg-accent text-accent-foreground px-6 py-3 rounded-lg font-semibold;
+    @apply transition-all duration-300 hover:scale-105;
+    box-shadow: var(--glow-accent);
+    border: 2px solid hsl(var(--accent));
+  }
+
+  .btn-neon-accent:hover {
+    @apply brightness-110;
+    box-shadow: var(--glow-accent), 0 0 60px hsl(var(--accent) / 0.4);
+  }
+
+  /* Card with neon border effect */
+  .card-neon {
+    @apply bg-card text-card-foreground p-6 rounded-xl border-2;
+    border-color: hsl(var(--primary) / 0.3);
+    background: var(--gradient-dark);
+    transition: var(--transition-smooth);
+  }
+
+  .card-neon:hover {
+    border-color: hsl(var(--primary));
+    box-shadow: var(--glow-primary);
+    transform: translateY(-4px);
+  }
+
+  /* Text glow effects */
+  .text-glow-primary {
+    color: hsl(var(--primary));
+    text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+  }
+
+  .text-glow-secondary {
+    color: hsl(var(--secondary));
+    text-shadow: 0 0 20px hsl(var(--secondary) / 0.5);
+  }
+
+  .text-glow-accent {
+    color: hsl(var(--accent));
+    text-shadow: 0 0 20px hsl(var(--accent) / 0.5);
+  }
+
+  /* Gradient text effect */
+  .text-gradient-neon {
+    background: var(--gradient-neon);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Animated background */
+  .bg-animated {
+    background: var(--gradient-hero);
+    background-size: 400% 400%;
+    animation: gradientShift 8s ease infinite;
+  }
+
+  /* Floating animation for hero elements */
+  .floating {
+    animation: floating 3s ease-in-out infinite;
+  }
+
+  .floating-delayed {
+    animation: floating 3s ease-in-out infinite 1.5s;
+  }
+}
+
+@layer utilities {
+  /* Custom animations */
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  @keyframes floating {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  @keyframes pulse-neon {
+    0%, 100% { 
+      box-shadow: var(--glow-primary);
+    }
+    50% { 
+      box-shadow: var(--glow-primary), 0 0 80px hsl(var(--primary) / 0.6);
+    }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  /* Utility animations */
+  .animate-pulse-neon {
+    animation: pulse-neon 2s ease-in-out infinite;
+  }
+
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  /* Responsive glow utilities */
+  .glow-primary {
+    box-shadow: var(--glow-primary);
+  }
+
+  .glow-secondary {
+    box-shadow: var(--glow-secondary);
+  }
+
+  .glow-accent {
+    box-shadow: var(--glow-accent);
+  }
+
+  .glow-electric {
+    box-shadow: var(--glow-electric);
   }
 }
