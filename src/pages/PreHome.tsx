@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX } from 'lucide-react';
+import PageLoader from '@/components/PageLoader';
 
 const PreHome = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const [keySequence, setKeySequence] = useState('');
   const [isMuted, setIsMuted] = useState(false);
@@ -47,10 +49,14 @@ const PreHome = () => {
   const handleEnterFestival = () => {
     setIsLoading(true);
     
-    // Simulate loading and transition
+    // Fade to black and then show loader
     setTimeout(() => {
-      navigate('/festival');
-    }, 2000);
+      setShowLoader(true);
+    }, 500);
+  };
+
+  const handleLoaderComplete = () => {
+    navigate('/festival');
   };
 
   return (
@@ -170,18 +176,13 @@ const PreHome = () => {
       )}
 
       {/* Loading overlay */}
-      {isLoading && (
-        <div className="fixed inset-0 bg-black z-40 flex items-center justify-center">
-          <div className="text-center space-y-6">
-            <div className="relative">
-              <div className="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-12 bg-primary/20 rounded-full animate-pulse" />
-              </div>
-            </div>
-            <p className="text-xl text-primary animate-pulse">Carregando a experiência...</p>
-          </div>
-        </div>
+      {isLoading && !showLoader && (
+        <div className="fixed inset-0 bg-black z-40 animate-fade-in" />
+      )}
+
+      {/* Page Loader */}
+      {showLoader && (
+        <PageLoader onComplete={handleLoaderComplete} />
       )}
     </div>
   );
