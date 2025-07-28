@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX } from 'lucide-react';
 import PageLoader from '@/components/PageLoader';
+import AnimatedLogo from '@/components/AnimatedLogo';
 
 const PreHome = () => {
   const navigate = useNavigate();
@@ -96,8 +97,9 @@ const PreHome = () => {
           {Array.from({ length: 20 }).map((_, i) => (
             <div
               key={i}
-              className="absolute w-2 h-2 bg-primary rounded-full animate-float opacity-60"
+              className="absolute w-2 h-2 rounded-full animate-float opacity-60"
               style={{
+                backgroundColor: i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#ef4444' : '#fbbf24',
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 3}s`,
@@ -117,12 +119,8 @@ const PreHome = () => {
       {/* Main content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
         <div className="text-center space-y-8 max-w-2xl">
-          {/* Festival title */}
-          <h1 className="text-4xl md:text-6xl font-bold text-glow-primary mb-8">
-            <span className="text-gradient-neon">FESTIVAL DE ROCK</span>
-            <br />
-            <span className="text-3xl md:text-5xl text-accent">2025</span>
-          </h1>
+          {/* Animated Logo */}
+          <AnimatedLogo />
 
           {/* Typing animation */}
           <div className="h-16 flex items-center justify-center">
