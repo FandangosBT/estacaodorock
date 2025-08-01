@@ -1,7 +1,30 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MapPin, Filter, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Clock, MapPin, MessageCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAsyncOperation } from '@/hooks/use-global-state';
+
+// Brutal shake animation CSS
+const brutalShakeStyles = `
+  @keyframes brutal-shake {
+    0%   { transform: translate(0px, 0px) rotate(0deg); }
+    20%  { transform: translate(1px, -1px) rotate(-1deg); }
+    40%  { transform: translate(-1px, 2px) rotate(1deg); }
+    60%  { transform: translate(2px, 1px) rotate(0deg); }
+    80%  { transform: translate(-1px, -1px) rotate(1deg); }
+    100% { transform: translate(1px, 2px) rotate(0deg); }
+  }
+  
+  .brutal-shake:hover {
+    animation: brutal-shake 0.25s infinite;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = brutalShakeStyles;
+  document.head.appendChild(styleSheet);
+}
 
 interface Performance {
   id: string;
@@ -40,8 +63,35 @@ const days = ['Todos', 'Sexta', 'Sábado', 'Domingo'];
 export const ProgramacaoSection = () => {
   const [selectedDay, setSelectedDay] = useState('Todos');
   const [selectedStage, setSelectedStage] = useState('Todos');
+  const [scheduleData, setScheduleData] = useState<Performance[]>([]);
+  
+  const { execute, isLoading, error, reset } = useAsyncOperation('schedule-data');
 
-  const filteredSchedule = schedule.filter(performance => {
+  useEffect(() => {
+    const loadScheduleData = async () => {
+      // Simula carregamento de dados da programação
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Simula possível erro (10% de chance)
+      if (Math.random() < 0.1) {
+        throw new Error('Erro ao carregar programação do festival');
+      }
+      
+      return schedule;
+    };
+
+    execute(loadScheduleData)
+      .then((result) => {
+        if (result) {
+          setScheduleData(result);
+        }
+      })
+      .catch(() => {
+        toast.error('Erro ao carregar programação');
+      });
+  }, [execute]);
+
+  const filteredSchedule = scheduleData.filter(performance => {
     const dayMatch = selectedDay === 'Todos' || performance.day === selectedDay;
     const stageMatch = selectedStage === 'Todos' || performance.stage === selectedStage;
     return dayMatch && stageMatch;
@@ -67,161 +117,178 @@ export const ProgramacaoSection = () => {
   };
 
   return (
-    <section id="programacao" className="py-20 px-6 bg-gradient-to-b from-background to-muted/20">
+    <section id="programacao" className="py-20 px-6 bg-black min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-black mb-6 text-gradient-neon uppercase tracking-wider">
-            Programação
+          <h2 className="text-4xl lg:text-5xl font-bold uppercase tracking-wider text-white mb-6" style={{ textShadow: '2px 2px 0 #ff2a2a' }}>
+            PROGRAMAÇÃO
           </h2>
-          <p className="text-xl text-foreground/80 max-w-2xl mx-auto">
+          <p className="text-[#f0f0f0] text-lg max-w-2xl mx-auto font-medium">
             Três dias de música ininterrupta com a melhor curadoria do rock nacional e internacional
           </p>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center py-20">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-[#ff2a2a] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-[#f0f0f0] font-bold uppercase tracking-wider">CARREGANDO PROGRAMAÇÃO...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="flex flex-col items-center py-20 text-center">
+            <AlertCircle className="w-16 h-16 text-[#ff2a2a] mb-4" />
+            <h3 className="text-xl font-bold uppercase tracking-wider text-white mb-2">ERRO AO CARREGAR PROGRAMAÇÃO</h3>
+            <p className="text-[#f0f0f0] mb-6">
+              {typeof error === 'string' ? error : error.message}
+            </p>
+            <button 
+              onClick={() => {
+                reset();
+                window.location.reload();
+              }}
+              className="brutal-shake px-6 py-3 bg-[#ff2a2a] text-white font-bold text-sm uppercase tracking-wider border-2 border-black hover:bg-black hover:text-[#ff2a2a] transition-all"
+            >
+              TENTAR NOVAMENTE
+            </button>
+          </div>
+        )}
+
+        {/* Content - Only show when not loading and no error */}
+        {!isLoading && !error && (
+        <>
         {/* Filters */}
-        <div className="flex flex-col lg:flex-row gap-6 mb-12">
+        <div className="flex flex-col lg:flex-row gap-8 mb-12">
           {/* Day Filter */}
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-primary">Dia</span>
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="w-5 h-5 text-[#ffbd00]" />
+              <span className="font-bold text-[#ffbd00] text-xl uppercase tracking-wider">DIA</span>
             </div>
             <div className="flex flex-wrap gap-3">
               {days.map((day) => (
-                <Button
+                <button
                   key={day}
                   onClick={() => setSelectedDay(day)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                    selectedDay === day
-                      ? 'btn-neon-primary'
-                      : 'bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary border border-border'
+                  className={`px-4 py-2 font-bold text-sm uppercase tracking-wider border-2 transition-all ${
+                    selectedDay === day 
+                      ? 'bg-[#ff2a2a] text-white border-[#ff2a2a]' 
+                      : 'bg-[#111111] text-[#f0f0f0] border-white/20 hover:bg-[#ff2a2a] hover:text-white hover:border-[#ff2a2a]'
                   }`}
                 >
                   {day}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
 
           {/* Stage Filter */}
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <MapPin className="w-5 h-5 text-secondary" />
-              <span className="font-semibold text-secondary">Palco</span>
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin className="w-5 h-5 text-[#ffbd00]" />
+              <span className="font-bold text-[#ffbd00] text-xl uppercase tracking-wider">PALCO</span>
             </div>
             <div className="flex flex-wrap gap-3">
               {stages.map((stage) => (
-                <Button
+                <button
                   key={stage}
                   onClick={() => setSelectedStage(stage)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                    selectedStage === stage
-                      ? 'btn-neon-secondary'
-                      : 'bg-muted text-muted-foreground hover:bg-secondary/20 hover:text-secondary border border-border'
+                  className={`px-4 py-2 font-bold text-sm uppercase tracking-wider border-2 transition-all ${
+                    selectedStage === stage 
+                      ? 'bg-[#ff2a2a] text-white border-[#ff2a2a]' 
+                      : 'bg-[#111111] text-[#f0f0f0] border-white/20 hover:bg-[#ff2a2a] hover:text-white hover:border-[#ff2a2a]'
                   }`}
                 >
                   {stage}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
         </div>
 
         {/* Schedule Timeline */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {filteredSchedule.length === 0 ? (
-            <div className="text-center py-12">
-              <Filter className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-xl text-muted-foreground">
-                Nenhuma apresentação encontrada com os filtros selecionados
+            <div className="flex flex-col items-center py-16 text-center">
+              <div className="text-6xl mb-4">🎸</div>
+              <h3 className="text-2xl font-bold uppercase tracking-wider text-white mb-2">NENHUMA APRESENTAÇÃO ENCONTRADA</h3>
+              <p className="text-[#f0f0f0] mb-6">
+                Não encontramos apresentações para os filtros selecionados. Tente ajustar os filtros.
               </p>
+              <button
+                onClick={() => {
+                  setSelectedDay('Todos');
+                  setSelectedStage('Todos');
+                }}
+                className="brutal-shake px-6 py-3 bg-[#ff2a2a] text-white font-bold text-sm uppercase tracking-wider border-2 border-black hover:bg-black hover:text-[#ff2a2a] transition-all"
+              >
+                LIMPAR FILTROS
+              </button>
             </div>
           ) : (
             filteredSchedule.map((performance, index) => (
               <div
                 key={performance.id}
-                className="card-neon group"
+                className="border border-white/20 bg-[#111111] p-6 flex flex-col md:flex-row justify-between items-start md:items-center mb-4 hover:border-[#ff2a2a] transition-all"
                 style={{
-                  animationDelay: `${index * 0.1}s`,
-                  animation: 'fade-in 0.6s ease-out forwards'
+                  animationDelay: `${index * 0.1}s`
                 }}
               >
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                  {/* Time and Date */}
-                  <div className="md:col-span-3 text-center md:text-left">
-                    <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                      <Clock className="w-5 h-5 text-accent" />
-                      <span className="text-2xl font-bold text-glow-accent">
-                        {performance.time}
-                      </span>
-                    </div>
-                    <div className="text-foreground/70">
-                      {performance.day}, {performance.date}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {performance.duration}
-                    </div>
+                <div className="flex-1 mb-4 md:mb-0">
+                  <div className="text-[#ffbd00] font-bold text-xl mb-1">{performance.time}</div>
+                  <div className="text-white font-bold text-2xl uppercase tracking-wide mb-2">{performance.band}</div>
+                  <div className="text-gray-400 text-sm mb-2">
+                    {performance.genre} • <span className="text-[#ff2a2a]">{performance.stage}</span>
                   </div>
-
-                  {/* Band Info */}
-                  <div className="md:col-span-5">
-                    <h3 className="text-2xl md:text-3xl font-bold text-glow-primary mb-2">
-                      {performance.band}
-                    </h3>
-                    <p className="text-foreground/80 mb-2">
-                      {performance.genre}
-                    </p>
-                    <div className={`flex items-center gap-2 ${getStageColor(performance.stage)}`}>
-                      <MapPin className="w-4 h-4" />
-                      <span className="font-semibold">
-                        {performance.stage}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Action Button */}
-                  <div className="md:col-span-4 flex justify-center md:justify-end">
-                    <Button
-                      onClick={() => addToWhatsApp(performance)}
-                      className="btn-neon-accent w-full md:w-auto"
-                    >
-                      <MessageCircle className="w-5 h-5 mr-2" />
-                      Adicionar ao WhatsApp
-                    </Button>
+                  <div className="text-gray-500 text-xs">
+                    {performance.day}, {performance.date} • {performance.duration}
                   </div>
                 </div>
+                <button
+                  onClick={() => addToWhatsApp(performance)}
+                  className="brutal-shake px-4 py-2 bg-[#ff2a2a] text-white font-bold text-xs uppercase tracking-wider border-2 border-black hover:bg-black hover:text-[#ff2a2a] transition-all flex items-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  💬 ADICIONAR AO WHATSAPP
+                </button>
               </div>
             ))
           )}
         </div>
 
         {/* Stage Legend */}
-        <div className="mt-16 p-6 bg-card/50 rounded-xl border border-border/50">
-          <h3 className="text-xl font-bold mb-4 text-center">
-            Localização dos Palcos
+        <div className="mt-16">
+          <h3 className="text-2xl font-bold uppercase tracking-wider text-white mb-8 text-center" style={{ textShadow: '1px 1px 0 #ff2a2a' }}>
+            LOCALIZAÇÃO DOS PALCOS
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 rounded-lg bg-primary/10 border border-primary/30">
-              <h4 className="font-bold text-primary mb-2">Palco Principal</h4>
-              <p className="text-sm text-foreground/70">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="border border-white/20 bg-[#111111] p-6 text-center">
+              <h4 className="text-[#ff2a2a] font-bold text-xl uppercase tracking-wider mb-2">PALCO PRINCIPAL</h4>
+              <p className="text-[#f0f0f0] text-sm">
                 Arena Central • Capacidade: 30.000 pessoas
               </p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-secondary/10 border border-secondary/30">
-              <h4 className="font-bold text-secondary mb-2">Palco Alternativo</h4>
-              <p className="text-sm text-foreground/70">
+            <div className="border border-white/20 bg-[#111111] p-6 text-center">
+              <h4 className="text-[#ffbd00] font-bold text-xl uppercase tracking-wider mb-2">PALCO ALTERNATIVO</h4>
+              <p className="text-[#f0f0f0] text-sm">
                 Setor Norte • Capacidade: 15.000 pessoas
               </p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-accent/10 border border-accent/30">
-              <h4 className="font-bold text-accent mb-2">Palco Eletrônico</h4>
-              <p className="text-sm text-foreground/70">
+            <div className="border border-white/20 bg-[#111111] p-6 text-center">
+              <h4 className="text-[#ffbd00] font-bold text-xl uppercase tracking-wider mb-2">PALCO ELETRÔNICO</h4>
+              <p className="text-[#f0f0f0] text-sm">
                 Setor Sul • Capacidade: 10.000 pessoas
               </p>
             </div>
           </div>
         </div>
+        </>
+        )}
       </div>
     </section>
   );

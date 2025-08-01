@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Heart, ExternalLink, Music, Star } from 'lucide-react';
+import { Heart, ExternalLink, Music, Star, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import Loading from '@/components/ui/Loading';
+import EmptyState from '@/components/ui/EmptyState';
+import { useAsyncOperation } from '@/hooks/use-global-state';
+import '@/styles/rock-styles.css';
 
 interface Band {
   id: string;
@@ -101,12 +105,29 @@ const bands: Band[] = [
 export const LineupSection = () => {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [selectedGenre, setSelectedGenre] = useState<string>('Todos');
+  const [bandsData, setBandsData] = useState<Band[]>([]);
+  const { execute, isLoading, error } = useAsyncOperation('lineup-section');
 
-  const genres = ['Todos', ...Array.from(new Set(bands.map(band => band.genre)))];
+  // Simula carregamento de dados das bandas
+  useEffect(() => {
+    execute(async () => {
+      // Simula uma requisição para buscar dados das bandas
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setBandsData(bands);
+      return bands;
+    }, {
+      onError: (err) => {
+        console.error('Erro ao carregar lineup:', err);
+        toast.error('Erro ao carregar lineup das bandas');
+      }
+    });
+  }, [execute]);
+
+  const genres = ['Todos', ...Array.from(new Set(bandsData.map(band => band.genre)))];
 
   const filteredBands = selectedGenre === 'Todos' 
-    ? bands 
-    : bands.filter(band => band.genre === selectedGenre);
+    ? bandsData 
+    : bandsData.filter(band => band.genre === selectedGenre);
 
   const toggleFavorite = (bandId: string) => {
     const newFavorites = new Set(favorites);
@@ -124,15 +145,68 @@ export const LineupSection = () => {
     setFavorites(newFavorites);
   };
 
+  // Exibe loading enquanto carrega
+  if (isLoading) {
+    return (
+      <section id="lineup" className="py-20 px-6 bg-black">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-bold uppercase text-white tracking-wider" style={{textShadow: '3px 3px 0px #ff2a2a, 6px 6px 10px rgba(255, 42, 42, 0.3)'}}>
+              LINE-UP
+            </h2>
+            <p className="text-sm text-white/80 max-w-2xl mx-auto">
+              Carregando as melhores bandas do rock...
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <Loading 
+              size="xl" 
+              variant="dots" 
+              text="Carregando lineup..." 
+            />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Exibe erro se houver falha
+  if (error) {
+    return (
+      <section id="lineup" className="py-20 px-6 bg-black">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-bold uppercase text-white tracking-wider" style={{textShadow: '3px 3px 0px #ff2a2a, 6px 6px 10px rgba(255, 42, 42, 0.3)'}}>
+              LINE-UP
+            </h2>
+          </div>
+          <div className="flex justify-center">
+            <div className="text-center max-w-md">
+              <AlertCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold mb-2 text-white uppercase">Erro ao Carregar Lineup</h3>
+              <p className="text-white/80 mb-6 text-sm">Não foi possível carregar as informações das bandas.</p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="bg-black border border-red-600 text-red-600 hover:bg-red-600 hover:text-black font-bold uppercase"
+              >
+                Tentar Novamente
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section id="lineup" className="py-20 px-6">
+    <section id="lineup" className="py-20 px-6 bg-black">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-black mb-6 text-gradient-neon uppercase tracking-wider">
-            Line-up
+          <h2 className="text-5xl font-bold uppercase text-white tracking-wider" style={{textShadow: '3px 3px 0px #ff2a2a, 6px 6px 10px rgba(255, 42, 42, 0.3)'}}>
+            LINE-UP
           </h2>
-          <p className="text-xl text-foreground/80 max-w-2xl mx-auto">
+          <p className="text-sm text-white/80 max-w-2xl mx-auto">
             As maiores bandas de rock nacional e internacional em um só lugar
           </p>
         </div>
@@ -143,10 +217,10 @@ export const LineupSection = () => {
             <Button
               key={genre}
               onClick={() => setSelectedGenre(genre)}
-              className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
+              className={`px-6 py-3 font-bold uppercase tracking-wide transition-all duration-300 border-2 ${
                 selectedGenre === genre 
-                  ? 'btn-neon-primary' 
-                  : 'bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary border border-border'
+                  ? 'bg-red-600 text-black font-bold border-red-600' 
+                  : 'bg-transparent border-white text-white hover:bg-red-600 hover:text-black'
               }`}
             >
               {genre}
@@ -155,24 +229,37 @@ export const LineupSection = () => {
         </div>
 
         {/* Bands Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredBands.map((band, index) => (
-            <div
-              key={band.id}
-              className="card-neon group cursor-pointer"
-              style={{
-                animationDelay: `${index * 0.1}s`,
-                animation: 'fade-in 0.6s ease-out forwards'
-              }}
-            >
+        {filteredBands.length === 0 ? (
+           <div className="flex justify-center py-16">
+             <EmptyState 
+               type="music"
+               title="Nenhuma banda encontrada"
+               description={`Não encontramos bandas para o gênero "${selectedGenre}". Tente outro filtro.`}
+               action={{
+                 label: "Ver Todas as Bandas",
+                 onClick: () => setSelectedGenre('Todos')
+               }}
+             />
+           </div>
+         ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBands.map((band, index) => (
+              <div
+                key={band.id}
+                className="bg-gray-900 border border-gray-700 p-4 group cursor-pointer hover:scale-105 transition-transform duration-300"
+                style={{
+                  animationDelay: `${index * 0.1}s`,
+                  animation: 'fade-in 0.6s ease-out forwards'
+                }}
+              >
               {/* Band Image */}
-              <div className="relative overflow-hidden rounded-lg mb-4">
+              <div className="relative overflow-hidden mb-4">
                 <img
                   src={band.image}
-                  alt={band.name}
+                  alt={`Foto da banda ${band.name}, gênero ${band.genre}`}
                   className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/80" />
                 
                 {/* Favorite Button */}
                 <button
@@ -180,24 +267,26 @@ export const LineupSection = () => {
                     e.stopPropagation();
                     toggleFavorite(band.id);
                   }}
-                  className={`absolute top-4 right-4 p-2 rounded-full transition-all duration-300 ${
+                  className={`absolute top-4 right-4 p-2 transition-all duration-300 ${
                     favorites.has(band.id)
-                      ? 'bg-secondary text-secondary-foreground glow-secondary'
-                      : 'bg-black/50 text-white hover:bg-secondary/20'
+                      ? 'text-red-500'
+                      : 'text-white hover:text-red-500'
                   }`}
+                  aria-label={`${favorites.has(band.id) ? 'Remover' : 'Adicionar'} ${band.name} dos favoritos`}
                 >
                   <Heart 
-                    className={`w-5 h-5 ${favorites.has(band.id) ? 'fill-current' : ''}`} 
+                    className={`w-5 h-5 ${favorites.has(band.id) ? 'fill-current' : ''}`}
+                    aria-hidden="true"
                   />
                 </button>
 
                 {/* Performance Info */}
                 <div className="absolute bottom-4 left-4 right-4">
-                  <div className="flex items-center gap-2 text-white text-sm">
+                  <div className="flex items-center gap-2 text-white text-xs">
                     <Music className="w-4 h-4" />
                     <span>{band.day} • {band.time}</span>
                   </div>
-                  <div className="text-accent text-sm font-semibold">
+                  <div className="text-blue-300 text-xs font-semibold">
                     {band.stage}
                   </div>
                 </div>
@@ -206,15 +295,15 @@ export const LineupSection = () => {
               {/* Band Info */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-2xl font-bold text-glow-primary">
+                  <h3 className="text-yellow-400 drop-shadow-md text-2xl font-bold uppercase">
                     {band.name}
                   </h3>
                   {favorites.has(band.id) && (
-                    <Star className="w-5 h-5 text-secondary fill-current" />
+                    <Star className="w-5 h-5 text-red-500 fill-current" />
                   )}
                 </div>
                 
-                <p className="text-accent font-semibold">
+                <p className="text-white text-xs">
                   {band.genre}
                 </p>
 
@@ -223,7 +312,7 @@ export const LineupSection = () => {
                   {band.spotify && (
                     <Button
                       size="sm"
-                      className="btn-neon-accent"
+                      className="bg-black border border-red-600 text-red-600 hover:bg-red-600 hover:text-black transition-all duration-300 text-xs font-bold uppercase"
                       onClick={() => window.open(band.spotify, '_blank')}
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
@@ -233,7 +322,7 @@ export const LineupSection = () => {
                   {band.youtube && (
                     <Button
                       size="sm"
-                      className="bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary"
+                      className="bg-black border border-red-600 text-red-600 hover:bg-red-600 hover:text-black transition-all duration-300 text-xs font-bold uppercase"
                       onClick={() => window.open(band.youtube, '_blank')}
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
@@ -245,13 +334,14 @@ export const LineupSection = () => {
             </div>
           ))}
         </div>
+        )}
 
         {/* Favorites Counter */}
         {favorites.size > 0 && (
           <div className="text-center mt-12">
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-secondary/20 rounded-full border border-secondary/30">
-              <Heart className="w-5 h-5 text-secondary fill-current" />
-              <span className="text-secondary font-semibold">
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-red-600/20 border border-red-600">
+              <Heart className="w-5 h-5 text-red-500 fill-current" />
+              <span className="text-white font-bold uppercase text-sm">
                 {favorites.size} banda{favorites.size !== 1 ? 's' : ''} favorita{favorites.size !== 1 ? 's' : ''}
               </span>
             </div>

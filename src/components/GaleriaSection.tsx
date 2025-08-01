@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Heart, Camera, Star, Crown, Upload } from 'lucide-react';
+import { HoverImageGallery } from '@/components/ui/hover-image-gallery';
 
 const mockPhotos = [
   {
@@ -76,125 +75,115 @@ export const GaleriaSection = () => {
   };
 
   return (
-    <section className="min-h-screen bg-background py-20 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5" />
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-electric/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
-
-      <div className="container mx-auto px-4 relative z-10">
+    <section id="galeria" className="bg-black py-20 px-6">
+      <div className="max-w-6xl mx-auto py-16 px-4">
         {/* Header */}
         <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-7xl font-black mb-6 bg-gradient-to-r from-electric via-primary to-accent bg-clip-text text-transparent">
-            GALERIA SOCIAL
+          <h2 className="text-5xl lg:text-6xl font-bold uppercase tracking-wide text-[#f0f0f0] text-center drop-shadow-[0_0_4px_#ff2a2a] mb-4">
+            MURAL DO CAOS
           </h2>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Compartilhe sua experiência! Envie suas fotos e concorra aos prêmios especiais do festival.
+          <p className="text-[#ffbd00] text-center text-sm uppercase font-medium mt-2 mb-6">
+            Mostre sua rebeldia! Envie suas fotos e entre na galeria dos destemidos.
           </p>
           
           {/* Upload Button */}
-          <Button 
-            size="lg" 
-            className="group bg-gradient-to-r from-electric to-accent hover:from-electric-glow hover:to-accent-glow text-black font-bold px-8 py-4 rounded-xl transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-electric/50"
-          >
-            <Camera className="mr-2 h-5 w-5 group-hover:animate-bounce" />
-            Envie sua Selfie!
-            <Upload className="ml-2 h-4 w-4 group-hover:translate-y-[-2px] transition-transform" />
-          </Button>
+          <button className="bg-[#ff2a2a] text-[#f0f0f0] px-4 py-2 rounded uppercase font-semibold border border-white/10 hover:bg-[#e02121] transition flex items-center gap-2 mx-auto">
+            <span className="text-lg">📸</span>
+            MANDE SUA FOTO!
+          </button>
+        </div>
+
+        {/* Hover Image Gallery - Seção Especial */}
+        <div className="mb-16 flex flex-col items-center">
+          <h3 className="text-3xl lg:text-4xl font-bold uppercase tracking-wide text-[#ffbd00] text-center mb-2">
+            GALERIA INTERATIVA
+          </h3>
+          <p className="text-[#f0f0f0] text-center text-sm uppercase font-medium mb-8 opacity-80">
+            Passe o mouse sobre as imagens para navegar
+          </p>
+          <div className="flex justify-center">
+            <HoverImageGallery 
+              images={[
+                "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=550&h=550&fit=crop",
+                "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=550&h=550&fit=crop",
+                "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=550&h=550&fit=crop",
+                "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=550&h=550&fit=crop",
+                "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=550&h=550&fit=crop"
+              ]}
+            />
+          </div>
         </div>
 
         {/* Photo Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mt-8">
           {photos.map((photo) => (
             <div 
               key={photo.id}
-              className="relative group"
+              className="relative border border-white/10 bg-[#111] rounded-md overflow-hidden shadow-md transition hover:scale-[1.01]"
             >
-              {/* Polaroid Card */}
-              <div className="bg-white p-4 rounded-lg shadow-2xl transform rotate-1 group-hover:rotate-0 transition-all duration-300 hover:scale-105 relative">
-                {/* Top Badges */}
-                {photo.isTop && (
-                  <div className="absolute -top-2 -right-2 z-20">
-                    <Badge className="bg-gradient-to-r from-electric to-accent text-black font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">
-                      <Crown className="w-3 h-3 mr-1" />
-                      TOP DA GALERA
-                    </Badge>
-                  </div>
-                )}
-
-                {photo.isRockstar && (
-                  <div className="absolute -top-2 -left-2 z-20">
-                    <Badge className="bg-gradient-to-r from-accent to-primary text-white font-bold px-3 py-1 rounded-full shadow-lg">
-                      <Star className="w-3 h-3 mr-1 fill-current" />
-                      ROCKSTAR DO DIA
-                    </Badge>
-                  </div>
-                )}
-
-                {/* Photo */}
-                <div className="aspect-square overflow-hidden rounded-md mb-4 bg-muted">
-                  <img 
-                    src={photo.image} 
-                    alt={`Foto de ${photo.username}`}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-
-                {/* Photo Info */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-800">{photo.username}</span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleLike(photo.id)}
-                      className={`p-2 transition-all duration-200 ${
-                        photo.liked 
-                          ? 'text-red-500 hover:text-red-600' 
-                          : 'text-gray-500 hover:text-red-500'
-                      }`}
-                    >
-                      <Heart 
-                        className={`w-4 h-4 transition-all duration-200 ${
-                          photo.liked ? 'fill-current scale-110' : 'hover:scale-110'
-                        }`} 
-                      />
-                    </Button>
-                    <span className="text-sm font-medium text-gray-600">{photo.likes}</span>
-                  </div>
-                </div>
-
-                {/* Tape Effect */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="w-16 h-6 bg-yellow-200 opacity-80 rounded-sm shadow-md transform rotate-12"></div>
-                </div>
-              </div>
-
-              {/* Floating Effects for Top Photos */}
+              {/* Top Badges - Fitas Adesivas */}
               {photo.isTop && (
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-4 right-4 w-8 h-8 bg-electric rounded-full opacity-30 animate-ping"></div>
-                  <div className="absolute bottom-4 left-4 w-6 h-6 bg-accent rounded-full opacity-40 animate-pulse"></div>
+                <div className="absolute top-2 left-2 z-10 bg-[#ff2a2a] text-[#f0f0f0] px-2 py-1 text-xs font-bold uppercase tracking-wide transform -rotate-[6deg] border border-white/20">
+                  <Crown className="w-3 h-3 mr-1 inline" />
+                  TOP
                 </div>
               )}
+
+              {photo.isRockstar && (
+                <div className="absolute top-2 right-2 z-10 bg-[#ff2a2a] text-[#f0f0f0] px-2 py-1 text-xs font-bold uppercase tracking-wide transform rotate-[3deg] border border-white/20">
+                  <Star className="w-3 h-3 mr-1 fill-current inline" />
+                  ROCKSTAR
+                </div>
+              )}
+
+              {/* Fitas Adesivas Decorativas */}
+              <div className="absolute top-0 left-1/4 w-8 h-4 bg-[#ffbd00] transform -rotate-[6deg] z-10 opacity-80"></div>
+              <div className="absolute bottom-0 right-1/3 w-6 h-3 bg-[#ffbd00] transform rotate-[3deg] z-10 opacity-80"></div>
+
+              {/* Photo */}
+              <img 
+                src={photo.image} 
+                alt={`Foto de ${photo.username}`}
+                className="w-full h-auto object-cover aspect-square"
+              />
+
+              {/* Username */}
+              <div className="text-white text-xs font-bold px-4 mt-2 uppercase tracking-tight">
+                {photo.username}
+              </div>
+
+              {/* Curtidas */}
+              <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-[#0f0f0f]/80 px-2 py-1 rounded-full border border-white/10">
+                <button
+                  onClick={() => handleLike(photo.id)}
+                  className="p-1 hover:scale-110 transition-transform"
+                >
+                  <Heart 
+                    className={`w-4 h-4 ${
+                      photo.liked ? 'fill-current text-[#ff2a2a]' : 'text-[#ff2a2a]'
+                    }`} 
+                  />
+                </button>
+                <span className="text-[#f0f0f0] text-sm">{photo.likes}</span>
+              </div>
             </div>
           ))}
         </div>
 
         {/* Stats Section */}
-        <div className="text-center mt-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-2xl mx-auto">
-            <div className="p-6 bg-card rounded-xl border border-electric/20 shadow-lg">
-              <div className="text-3xl font-bold text-electric mb-2">247</div>
-              <div className="text-muted-foreground">Fotos Enviadas</div>
+        <div className="mt-16 pt-8 border-t border-white/10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-[#111] border border-white/20 rounded-md p-6 text-center">
+              <div className="text-3xl font-bold text-[#ff2a2a] mb-2">247</div>
+              <div className="text-[#f0f0f0] text-sm uppercase font-medium">Fotos Enviadas</div>
             </div>
-            <div className="p-6 bg-card rounded-xl border border-accent/20 shadow-lg">
-              <div className="text-3xl font-bold text-accent mb-2">1.2k</div>
-              <div className="text-muted-foreground">Curtidas</div>
+            <div className="bg-[#111] border border-white/20 rounded-md p-6 text-center">
+              <div className="text-3xl font-bold text-[#ff2a2a] mb-2">1.2k</div>
+              <div className="text-[#f0f0f0] text-sm uppercase font-medium">Curtidas</div>
             </div>
-            <div className="p-6 bg-card rounded-xl border border-primary/20 shadow-lg">
-              <div className="text-3xl font-bold text-primary mb-2">12</div>
-              <div className="text-muted-foreground">Rockstars do Dia</div>
+            <div className="bg-[#111] border border-white/20 rounded-md p-6 text-center">
+              <div className="text-3xl font-bold text-[#ff2a2a] mb-2">12</div>
+              <div className="text-[#f0f0f0] text-sm uppercase font-medium">Rockstars do Dia</div>
             </div>
           </div>
         </div>

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Star, MessageCircle, Share2, RotateCcw } from 'lucide-react';
+import { Star, MessageCircle, Share2, RotateCcw, Guitar } from 'lucide-react';
 import { toast } from 'sonner';
+import '../styles/rock-styles.css';
 
 interface Question {
   id: number;
@@ -183,33 +184,41 @@ export const QuizSection = () => {
 
   if (result) {
     return (
-      <section id="quiz" className="py-20 px-6 bg-gradient-to-br from-primary/10 via-background to-secondary/10">
-        <div className="max-w-4xl mx-auto text-center">
+      <section id="quiz" className="bg-black py-20 px-6">
+        <div className="bg-[#0f0f0f] border border-white/10 rounded-lg px-6 py-8 max-w-3xl mx-auto shadow-[0_0_12px_#ff2a2a66]">
+          {/* Title */}
+          <h2 className="text-4xl lg:text-5xl font-bold uppercase tracking-wider text-[#ff2a2a] text-center drop-shadow-[0_0_2px_#ff2a2a]">
+            QUIZ ROCK
+          </h2>
+          <p className="text-[#f0f0f0] text-center text-sm mt-2 mb-8">
+            Resultado do seu perfil roqueiro
+          </p>
+
           {/* Result Header */}
-          <div className="mb-8">
-            <div className="text-8xl mb-4 animate-bounce">{result.emoji}</div>
-            <h2 className="text-4xl md:text-5xl font-black mb-4 text-gradient-neon">
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">{result.emoji}</div>
+            <h3 className="text-2xl md:text-3xl font-bold text-[#f0f0f0] drop-shadow-[0_0_3px_#ff2a2a] text-center mb-4">
               {result.title}
-            </h2>
+            </h3>
             <div className="flex justify-center gap-2 mb-6">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="w-6 h-6 text-secondary fill-current" />
+                <Star key={i} className="w-6 h-6 text-[#ffbd00] fill-current" />
               ))}
             </div>
           </div>
 
           {/* Description */}
-          <div className="card-neon mb-8">
-            <p className="text-lg leading-relaxed mb-6">
+          <div className="mb-8">
+            <p className="text-[#f0f0f0] text-lg leading-relaxed mb-6 text-center">
               {result.description}
             </p>
             
             {/* Traits */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {result.traits.map((trait, index) => (
                 <div 
                   key={trait} 
-                  className="px-4 py-2 bg-primary/20 rounded-full border border-primary/30 text-sm font-semibold"
+                  className="bg-[#111] border border-white/20 text-[#f0f0f0] px-4 py-2 rounded-md text-sm font-bold text-center uppercase tracking-wide"
                   style={{
                     animationDelay: `${index * 0.1}s`,
                     animation: 'fade-in 0.6s ease-out forwards'
@@ -222,41 +231,43 @@ export const QuizSection = () => {
           </div>
 
           {/* Coupon */}
-          <div className="card-neon bg-gradient-to-r from-secondary/20 to-accent/20 border-secondary/50 mb-8">
-            <h3 className="text-2xl font-bold text-glow-secondary mb-3">
-              🎫 Seu Cupom Exclusivo
-            </h3>
-            <div className="text-3xl font-black text-secondary mb-3 tracking-wider">
-              {result.coupon}
+          <div className="bg-[#111] border border-[#ff2a2a] rounded-md p-6 mb-8">
+            <h4 className="text-[#ffbd00] text-xl font-bold uppercase tracking-wider text-center mb-3">
+              🎫 CUPOM EXCLUSIVO
+            </h4>
+            <div className="bg-[#0f0f0f] border-2 border-[#ff2a2a] rounded-md p-4 text-center mb-3">
+              <span className="text-[#ff2a2a] text-2xl font-bold tracking-widest">
+                {result.coupon}
+              </span>
             </div>
-            <p className="text-foreground/80 mb-4">
+            <p className="text-[#f0f0f0] text-sm text-center font-medium">
               Use este cupom para ganhar desconto nos ingressos!
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <Button
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
               onClick={redeemCoupon}
-              className="btn-neon-secondary"
+              className="bg-[#ff2a2a] text-[#f0f0f0] px-6 py-4 rounded-md font-bold uppercase tracking-wide transition hover:bg-[#111] hover:text-[#ff2a2a] hover:border-2 hover:border-[#ff2a2a] flex items-center justify-center gap-2"
             >
-              <MessageCircle className="w-5 h-5 mr-2" />
-              Resgatar no WhatsApp
-            </Button>
-            <Button
+              <MessageCircle className="w-5 h-5" />
+              RESGATAR
+            </button>
+            <button
               onClick={shareResult}
-              className="btn-neon-accent"
+              className="bg-[#ffbd00] text-black px-6 py-4 rounded-md font-bold uppercase tracking-wide transition hover:bg-[#111] hover:text-[#ffbd00] hover:border-2 hover:border-[#ffbd00] flex items-center justify-center gap-2"
             >
-              <Share2 className="w-5 h-5 mr-2" />
-              Compartilhar Resultado
-            </Button>
-            <Button
+              <Share2 className="w-5 h-5" />
+              COMPARTILHAR
+            </button>
+            <button
               onClick={resetQuiz}
-              className="bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary border border-border"
+              className="bg-[#111] text-[#f0f0f0] border border-white/20 px-6 py-4 rounded-md font-bold uppercase tracking-wide transition hover:bg-[#f0f0f0] hover:text-black flex items-center justify-center gap-2"
             >
-              <RotateCcw className="w-5 h-5 mr-2" />
-              Fazer Novamente
-            </Button>
+              <RotateCcw className="w-5 h-5" />
+              REFAZER
+            </button>
           </div>
         </div>
       </section>
@@ -264,74 +275,74 @@ export const QuizSection = () => {
   }
 
   return (
-    <section id="quiz" className="py-20 px-6 bg-gradient-to-br from-accent/10 via-background to-primary/10">
-      <div className="max-w-4xl mx-auto">
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-5xl md:text-6xl font-black mb-6 text-gradient-neon uppercase tracking-wider">
-            Quiz Rock
-          </h2>
-          <p className="text-xl text-foreground/80 mb-8">
-            Descubra que tipo de roqueiro você é e ganhe um cupom exclusivo!
-          </p>
-          
-          {/* Progress Bar */}
-          <div className="max-w-md mx-auto">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-foreground/70">Progresso</span>
-              <span className="text-sm font-bold text-primary">
-                {currentQuestion + 1}/{questions.length}
-              </span>
-            </div>
-            <Progress 
-              value={progress} 
-              className="h-3 bg-muted"
+    <section id="quiz" className="bg-black py-20 px-6">
+      <div className="bg-[#0f0f0f] border border-white/10 rounded-lg px-6 py-8 max-w-3xl mx-auto shadow-[0_0_12px_#ff2a2a66]">
+        {/* Title & Subtitle */}
+        <h2 className="text-4xl lg:text-5xl font-bold uppercase tracking-wider text-[#ff2a2a] text-center drop-shadow-[0_0_2px_#ff2a2a]">
+          QUIZ ROCK
+        </h2>
+        <p className="text-[#f0f0f0] text-center text-sm mt-2 mb-8">
+          Descubra que tipo de roqueiro você é
+        </p>
+        
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs text-gray-400">PROGRESSO</span>
+            <span className="text-xs text-gray-400 text-right">
+              {currentQuestion + 1}/{questions.length}
+            </span>
+          </div>
+          <div className="relative h-2 w-full bg-[#1a1a1a] rounded-full overflow-hidden">
+            <div 
+              className="absolute left-0 top-0 h-2 bg-[#ff2a2a] transition-all ease-in-out duration-500"
+              style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
-        {/* Question Card */}
-        <div className={`card-neon transition-all duration-300 ${isAnimating ? 'animate-shake' : ''}`}>
-          <div className="text-center mb-8">
-            <div className="text-6xl mb-4">🎸</div>
-            <h3 className="text-2xl md:text-3xl font-bold text-glow-primary mb-6">
-              {questions[currentQuestion].question}
-            </h3>
-          </div>
+        {/* Question */}
+        <div className={`transition-all duration-300 ${isAnimating ? 'animate-pulse' : ''}`}>
+          <h3 className="text-2xl md:text-3xl font-bold text-[#f0f0f0] drop-shadow-[0_0_3px_#ff2a2a] text-center mt-6 mb-6">
+            {questions[currentQuestion].question}
+          </h3>
 
           {/* Answer Options */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             {questions[currentQuestion].options.map((option, index) => (
-              <Button
+              <button
                 key={index}
                 onClick={() => handleAnswer(option.value)}
-                className="p-6 h-auto text-left bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary border border-border hover:border-primary/50 transition-all duration-300 hover:scale-105"
+                className={`bg-[#111] border border-white/20 text-[#f0f0f0] py-3 px-4 rounded-md text-left hover:border-[#ff2a2a] hover:bg-[#1a1a1a] hover:scale-105 transition-all duration-200 font-medium ${
+                  answers[currentQuestion] === option.value 
+                    ? 'border-[#ff2a2a] bg-[#1a1a1a] text-[#ff2a2a]' 
+                    : ''
+                }`}
                 style={{
                   animationDelay: `${index * 0.1}s`,
                   animation: 'fade-in 0.6s ease-out forwards'
                 }}
               >
-                <div className="text-lg font-semibold">
-                  {option.text}
-                </div>
-              </Button>
+                <span className="text-lg mr-2">{option.text.split(' ')[0]}</span>
+                <span>{option.text.substring(option.text.indexOf(' ') + 1)}</span>
+              </button>
             ))}
           </div>
 
-          {/* Question Counter */}
-          <div className="text-center mt-8">
-            <div className="inline-flex gap-2">
-              {questions.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index <= currentQuestion
-                      ? 'bg-primary glow-primary'
-                      : 'bg-muted'
-                  }`}
-                />
-              ))}
-            </div>
+          {/* Question Indicators */}
+          <div className="flex justify-center gap-2 mt-8">
+            {questions.map((_, index) => (
+              <div
+                key={index}
+                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                  index < currentQuestion
+                    ? 'bg-[#ff2a2a]'
+                    : index === currentQuestion
+                    ? 'bg-[#ffbd00] ring-2 ring-[#ffbd00]/50'
+                    : 'bg-[#333]'
+                }`}
+              />
+            ))}
           </div>
         </div>
       </div>

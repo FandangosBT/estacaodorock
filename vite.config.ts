@@ -19,4 +19,19 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    exclude: [
+      'chunk-DSFGRTI6',
+      'chunk-PQUYVT7N',
+      'chunk-HXLYD6SC',
+      'chunk-LLJHJLFS',
+      'chunk-S72ARCMP',
+      'chunk-YXBH7WNX',
+      'chunk-6PZAGMVY',
+      'chunk-FNECWXOL',
+      'chunk-SN5UUERH',
+      'chunk-KYC7ZFSP',
+      'chunk-TMVWB6QZ'
+    ],
+  },
 }));

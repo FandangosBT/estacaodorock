@@ -1,0 +1,21 @@
+<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="72" height="72" rx="9" fill="#1a1a1a"/>
+  
+  <!-- Main circle -->
+  <circle cx="36" cy="28" r="17" fill="#ff6b35"/>
+  
+  <!-- Triangle -->
+  <polygon points="36,17 45,34 27,34" fill="#000"/>
+  
+  <!-- Small circle -->
+  <circle cx="36" cy="28" r="4" fill="#ff6b35"/>
+  
+  <!-- Lines -->
+  <rect x="25" y="45" width="22" height="1" fill="#ff6b35"/>
+  <rect x="28" y="48" width="16" height="1" fill="#ff6b35"/>
+  <rect x="31" y="51" width="10" height="1" fill="#ff6b35"/>
+  
+  <!-- Text -->
+  <text x="36" y="62" font-family="Arial, sans-serif" font-size="7" font-weight="bold" text-anchor="middle" fill="#ff6b35">ROCK</text>
+</svg>

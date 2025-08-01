@@ -1,0 +1,247 @@
+.logo {
+  position: relative;
+  filter: contrast(1.2) brightness(1.1);
+  /* Animações: entrada (1x), glitch contínuo, e pulso sincronizado com estrobo */
+  animation: 
+    logo-entrance 2s ease-out forwards,
+    glitch-continuous 3s infinite 2s,
+    logo-pulse 2s infinite 2.5s;
+  opacity: 0;
+  transform: scale(0.8) translateY(20px);
+}
+
+.logo::before,
+.logo::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('/logo.svg') no-repeat center;
+  background-size: contain;
+}
+
+.logo::before {
+  mix-blend-mode: screen;
+  opacity: 0.8;
+  animation: glitch-1 0.8s infinite;
+}
+
+.logo::after {
+  mix-blend-mode: multiply;
+  opacity: 0.6;
+  animation: glitch-2 1.2s infinite;
+}
+
+@keyframes glitch-1 {
+  0% {
+    clip-path: inset(20% 0 70% 0);
+    transform: translateX(-3px) skew(2deg);
+    filter: hue-rotate(0deg);
+  }
+  20% {
+    clip-path: inset(80% 0 10% 0);
+    transform: translateX(3px) skew(-1deg);
+    filter: hue-rotate(90deg);
+  }
+  40% {
+    clip-path: inset(40% 0 40% 0);
+    transform: translateX(-2px) skew(1deg);
+    filter: hue-rotate(180deg);
+  }
+  60% {
+    clip-path: inset(10% 0 80% 0);
+    transform: translateX(4px) skew(-2deg);
+    filter: hue-rotate(270deg);
+  }
+  80% {
+    clip-path: inset(60% 0 20% 0);
+    transform: translateX(-1px) skew(0.5deg);
+    filter: hue-rotate(360deg);
+  }
+  100% {
+    clip-path: inset(20% 0 70% 0);
+    transform: translateX(0) skew(0deg);
+    filter: hue-rotate(0deg);
+  }
+}
+
+@keyframes glitch-2 {
+  0% {
+    clip-path: inset(50% 0 40% 0);
+    transform: translateX(2px) scaleX(1.02);
+  }
+  25% {
+    clip-path: inset(10% 0 80% 0);
+    transform: translateX(-4px) scaleX(0.98);
+  }
+  50% {
+    clip-path: inset(70% 0 20% 0);
+    transform: translateX(3px) scaleX(1.01);
+  }
+  75% {
+    clip-path: inset(30% 0 60% 0);
+    transform: translateX(-2px) scaleX(0.99);
+  }
+  100% {
+    clip-path: inset(50% 0 40% 0);
+    transform: translateX(0) scaleX(1);
+  }
+}
+
+/* Animação de entrada da logo */
+@keyframes logo-entrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px) rotateX(90deg);
+    filter: contrast(1.2) brightness(1.1) blur(10px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05) translateY(-5px) rotateX(0deg);
+    filter: contrast(1.2) brightness(1.1) blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0) rotateX(0deg);
+    filter: contrast(1.2) brightness(1.1) blur(0px);
+  }
+}
+
+/* Efeito glitch contínuo mais sutil */
+@keyframes glitch-continuous {
+  0%, 90%, 100% {
+    transform: scale(1) translateY(0);
+  }
+  2% {
+    transform: scale(1.01) translateX(-1px);
+  }
+  4% {
+    transform: scale(0.99) translateX(1px);
+  }
+  6% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Rock Button Styles */
+.rock-button {
+  position: relative;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a0000 100%);
+  border: 3px solid #ffbd00;
+  color: #f0f0f0;
+  font-family: 'Bebas Neue', 'Impact', 'Arial Black', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 16px 32px;
+  min-width: 200px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 0 20px rgba(255, 255, 0, 0.3),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.rock-button:hover {
+  background: linear-gradient(135deg, #cc0000 0%, #660000 100%);
+  border-color: #f0f0f0;
+  box-shadow: 
+    0 0 30px rgba(255, 255, 255, 0.6),
+    inset 0 0 30px rgba(255, 255, 255, 0.2);
+  animation: rock-pulse 0.6s infinite alternate, rock-shake 0.1s infinite;
+}
+
+.rock-button-text {
+  position: relative;
+  z-index: 2;
+  text-shadow: 
+    2px 2px 0px #0f0f0f,
+    -1px -1px 0px #0f0f0f,
+    1px -1px 0px #0f0f0f,
+    -1px 1px 0px #0f0f0f;
+}
+
+.rock-button-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.8rem;
+  animation: rock-icon-glow 1.5s infinite alternate;
+}
+
+.rock-button:hover .rock-button-icon {
+  animation: rock-icon-glow 0.3s infinite alternate, rock-icon-shake 0.1s infinite;
+}
+
+@keyframes rock-pulse {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes rock-shake {
+  0% { transform: translateX(0) scale(1.05); }
+  25% { transform: translateX(-1px) scale(1.05); }
+  50% { transform: translateX(1px) scale(1.05); }
+  75% { transform: translateX(-1px) scale(1.05); }
+  100% { transform: translateX(0) scale(1.05); }
+}
+
+@keyframes rock-icon-glow {
+  0% {
+    text-shadow: 0 0 5px #ffbd00;
+    filter: brightness(1);
+  }
+  100% {
+    text-shadow: 0 0 20px #ffbd00, 0 0 30px #ffbd00;
+    filter: brightness(1.5);
+  }
+}
+
+@keyframes rock-icon-shake {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  25% { transform: translateY(-50%) rotate(-5deg); }
+  50% { transform: translateY(-50%) rotate(5deg); }
+  75% { transform: translateY(-50%) rotate(-3deg); }
+  100% { transform: translateY(-50%) rotate(0deg); }
+}
+
+/* Animação de pulso sincronizada com o estrobo do fundo */
+@keyframes logo-pulse {
+  0% {
+    transform: scale(1);
+    filter: contrast(1.2) brightness(1.1);
+  }
+  10% {
+    transform: scale(1.08);
+    filter: contrast(1.4) brightness(1.6) drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
+  }
+  20% {
+    transform: scale(1.05);
+    filter: contrast(1.3) brightness(1.4) drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));
+  }
+  30% {
+    transform: scale(1.12);
+    filter: contrast(1.5) brightness(1.8) drop-shadow(0 0 25px rgba(255, 255, 255, 1));
+  }
+  40% {
+    transform: scale(1.02);
+    filter: contrast(1.25) brightness(1.3) drop-shadow(0 0 10px rgba(255, 255, 255, 0.4));
+  }
+  50% {
+    transform: scale(1);
+    filter: contrast(1.2) brightness(1.1);
+  }
+  100% {
+    transform: scale(1);
+    filter: contrast(1.2) brightness(1.1);
+  }
+}

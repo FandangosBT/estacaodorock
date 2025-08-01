@@ -1,0 +1,328 @@
+/* Rock/Grunge Styles for Navbar and Hero Section */
+
+/* Brutalismo visual para Navbar */
+nav {
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+/* Ajuste da Navbar */
+nav.fixed.top-0 {
+  height: 6rem; /* aumenta a altura total */
+  display: flex;
+  align-items: center;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Ajuste da Logo */
+nav.fixed.top-0 img {
+  height: 4.5rem; /* ~72px */
+  max-height: 5rem; /* segurança em telas grandes */
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.2s ease-in-out;
+}
+
+nav.fixed.top-0 img:hover {
+  transform: scale(1.05);
+}
+
+/* Ajustes complementares para logo */
+nav img {
+  max-height: 6rem; /* Garantia de tamanho maior no desktop */
+}
+
+@media (min-width: 768px) {
+  nav img {
+    max-height: 7rem; /* Tablets */
+  }
+}
+
+@media (min-width: 1024px) {
+  nav img {
+    max-height: 8rem; /* Desktops */
+  }
+}
+
+/* Efeito de sombra na logo */
+.logo-brutal {
+  filter: drop-shadow(0 0 8px #ff2a2a);
+  transition: transform 0.2s ease;
+}
+.logo-brutal:hover {
+  transform: scale(1.05);
+}
+
+/* Hover do menu */
+nav a {
+  transition: color 0.2s ease;
+}
+nav a:hover {
+  color: #ffbd00;
+}
+
+/* Grunge Navbar Styles */
+.rock-navbar {
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a0000 100%);
+  border-bottom: 2px solid #ffbd00;
+  box-shadow: 
+    0 0 20px rgba(255, 255, 0, 0.2),
+    inset 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+.rock-navbar-logo {
+  font-family: 'Bebas Neue', 'Impact', 'Arial Black', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #f0f0f0;
+  font-family: 'Bebas Neue', 'Impact', 'Arial Black', sans-serif;
+  text-shadow: 
+    2px 2px 0px #0f0f0f,
+    -1px -1px 0px #0f0f0f,
+    1px -1px 0px #0f0f0f,
+    -1px 1px 0px #0f0f0f;
+}
+
+.rock-navbar-link {
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #f0f0f0;
+  font-family: 'Roboto Condensed', 'Impact', 'Arial Black', sans-serif;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.rock-navbar-link:hover {
+  color: #ffbd00;
+  text-shadow: 0 0 10px rgba(255, 189, 0, 0.8);
+}
+
+.rock-navbar-link.active {
+  color: #ffbd00;
+  text-shadow: 0 0 15px rgba(255, 189, 0, 1);
+}
+
+.rock-navbar-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ffbd00;
+  box-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+}
+
+/* Rock CTA Button */
+.rock-cta-button {
+  position: relative;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a0000 100%);
+  border: 3px solid #ffbd00;
+  color: #f0f0f0;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 0 15px rgba(255, 255, 0, 0.3),
+    inset 0 0 15px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.rock-cta-button:hover {
+  background: linear-gradient(135deg, #cc0000 0%, #660000 100%);
+  border-color: #f0f0f0;
+  box-shadow: 
+    0 0 25px rgba(255, 255, 255, 0.6),
+    inset 0 0 25px rgba(255, 255, 255, 0.2);
+  animation: rock-pulse 0.6s infinite alternate, rock-shake 0.1s infinite;
+}
+
+.rock-cta-button-text {
+  position: relative;
+  z-index: 2;
+  text-shadow: 
+    2px 2px 0px #0f0f0f,
+    -1px -1px 0px #0f0f0f,
+    1px -1px 0px #0f0f0f,
+    -1px 1px 0px #0f0f0f;
+}
+
+.rock-cta-button-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  animation: rock-icon-glow 1.5s infinite alternate;
+}
+
+.rock-cta-button:hover .rock-cta-button-icon {
+  animation: rock-icon-glow 0.3s infinite alternate, rock-icon-shake 0.1s infinite;
+}
+
+/* Hero Section Grunge Styles */
+.rock-hero-title {
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #f0f0f0;
+  font-family: 'Bebas Neue', 'Impact', 'Arial Black', sans-serif;
+  text-shadow: 
+    3px 3px 0px #0f0f0f,
+    -2px -2px 0px #0f0f0f,
+    2px -2px 0px #0f0f0f,
+    -2px 2px 0px #0f0f0f,
+    0 0 20px rgba(255, 255, 255, 0.5);
+  animation: glitch-text 3s infinite;
+}
+
+.rock-hero-subtitle {
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffbd00;
+  font-family: 'Roboto Condensed', 'Impact', 'Arial Black', sans-serif;
+  text-shadow: 
+    2px 2px 0px #0f0f0f,
+    -1px -1px 0px #0f0f0f,
+    1px -1px 0px #0f0f0f,
+    -1px 1px 0px #0f0f0f;
+}
+
+.rock-hero-date {
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #ffbd00;
+  font-family: 'Bebas Neue', 'Impact', 'Arial Black', sans-serif;
+  text-shadow: 
+    2px 2px 0px #0f0f0f,
+    -1px -1px 0px #0f0f0f,
+    1px -1px 0px #0f0f0f,
+    -1px 1px 0px #0f0f0f;
+  animation: date-pulse 2s infinite;
+}
+
+/* Grunge Texture Overlay */
+.grunge-texture-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px, 80px 80px, 60px 60px;
+  mix-blend-mode: overlay;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Animations */
+@keyframes rock-pulse {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes rock-shake {
+  0% { transform: translateX(0) scale(1.05); }
+  25% { transform: translateX(-1px) scale(1.05); }
+  50% { transform: translateX(1px) scale(1.05); }
+  75% { transform: translateX(-1px) scale(1.05); }
+  100% { transform: translateX(0) scale(1.05); }
+}
+
+@keyframes rock-icon-glow {
+  0% {
+    text-shadow: 0 0 5px #ffbd00;
+    filter: brightness(1);
+  }
+  100% {
+    text-shadow: 0 0 20px #ffbd00, 0 0 30px #ffbd00;
+    filter: brightness(1.5);
+  }
+}
+
+@keyframes rock-icon-shake {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  25% { transform: translateY(-50%) rotate(-5deg); }
+  50% { transform: translateY(-50%) rotate(5deg); }
+  75% { transform: translateY(-50%) rotate(-3deg); }
+  100% { transform: translateY(-50%) rotate(0deg); }
+}
+
+@keyframes glitch-text {
+  0%, 90%, 100% {
+    transform: translateX(0);
+  }
+  2% {
+    transform: translateX(-2px) skew(2deg);
+  }
+  4% {
+    transform: translateX(2px) skew(-1deg);
+  }
+  6% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes date-pulse {
+  0% {
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px rgba(255, 255, 0, 0.6),
+      0 0 40px rgba(255, 255, 0, 0.4),
+      0 0 50px rgba(255, 255, 0, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.3);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .rock-navbar-logo {
+    font-size: 1.2rem;
+  }
+  
+  .rock-navbar-link {
+    font-size: 0.9rem;
+  }
+  
+  .rock-cta-button {
+    font-size: 0.9rem;
+    padding: 10px 20px;
+  }
+  
+  .rock-hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .rock-hero-subtitle {
+    font-size: 1.2rem;
+  }
+  
+  .rock-hero-date {
+    font-size: 1.5rem;
+  }
+}
