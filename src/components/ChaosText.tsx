@@ -18,7 +18,7 @@ export function ChaosText() {
   const getRandomRestitution = () => 0.5 + Math.random() * 0.5; // 0.5 a 1.0
 
   return (
-    <div className="relative w-full h-[500px] bg-black overflow-hidden flex items-center justify-center border-t border-[#ff2a2a]">
+    <div className="relative w-full h-[500px] bg-transparent overflow-visible flex items-center justify-center">
       <Gravity gravity={{ x: 0, y: 0.6 }} className="w-full h-full">
         {words.map((word, index) => (
           <MatterBody

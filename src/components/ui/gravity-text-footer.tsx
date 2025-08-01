@@ -12,7 +12,11 @@ export function GravityTextFooter() {
     const engine = engineRef.current;
     const world = engine.world;
 
-    const width = window.innerWidth;
+    // Usa as dimensões do container pai em vez de window
+    const container = scene.current;
+    if (!container) return;
+    
+    const width = container.offsetWidth || 800;
     const height = 350;
 
     // Paredes físicas
@@ -89,8 +93,8 @@ export function GravityTextFooter() {
       return block;
     });
 
-    // Mouse para arrastar blocos
-    const mouse = Mouse.create(document.body);
+    // Mouse para arrastar blocos - limitado ao container
+    const mouse = Mouse.create(container);
     const mouseConstraint = MouseConstraint.create(engine, {
       mouse,
       constraint: { stiffness: 0.2, render: { visible: false } },
@@ -111,7 +115,8 @@ export function GravityTextFooter() {
   return (
     <div
       ref={scene}
-      className="relative w-full h-[350px] bg-black overflow-hidden border-t border-[#ff2a2a]"
+      className="relative w-full h-[350px] bg-transparent overflow-visible"
+      style={{ position: 'relative', zIndex: 1 }}
     />
   );
 }

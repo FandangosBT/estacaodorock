@@ -61,7 +61,7 @@ export const SponsorsSection = () => {
   ];
 
   return (
-    <section className="bg-black py-20 px-6">
+    <section id="apoiadores" className="bg-black py-20 px-6">
       <div className="max-w-6xl mx-auto py-16 px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl lg:text-5xl font-bold uppercase tracking-wider text-white mb-4" style={{textShadow: '2px 2px #ff2a2a'}}>

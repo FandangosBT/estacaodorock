@@ -9,6 +9,8 @@ import { SkipLinks } from "@/components/SkipLinks";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import PreHome from "./pages/PreHome";
+import LoaderPage from "./pages/LoaderPage";
+import LoaderExample from "./pages/LoaderExample";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +29,8 @@ const App = () => (
             <PWAUpdatePrompt />
             <Routes>
               <Route path="/" element={<PreHome />} />
+              <Route path="/loader" element={<LoaderPage />} />
+              <Route path="/loader-example" element={<LoaderExample />} />
               <Route path="/festival" element={<Index />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

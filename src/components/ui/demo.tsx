@@ -11,7 +11,7 @@ function HeroDemo() {
 
 function DemoGallery() {
   return (
-    <div className="min-h-screen overflow-hidden flex flex-col items-center justify-center">
+    <div className="min-h-screen flex flex-col items-center justify-center">
       <HoverImageGallery />
       <p className="mt-10 text-gray-400 uppercase text-sm tracking-wider">
         Passe o mouse sobre as imagens

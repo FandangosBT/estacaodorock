@@ -293,7 +293,11 @@ export const AnimatedCanvas = () => {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 pointer-events-none"
-      style={{ mixBlendMode: 'screen' }}
+      style={{ 
+        mixBlendMode: 'screen',
+        position: 'fixed',
+        pointerEvents: 'none'
+      }}
     />
   );
 };

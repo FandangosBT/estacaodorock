@@ -19,7 +19,7 @@ const getRandomX = (index: number) => `${10 + index * 12}%`;
 
 export function GravityTextFooter() {
   return (
-    <div className="relative w-full h-[350px] bg-black overflow-hidden flex items-center justify-center">
+    <div className="relative w-full h-[350px] bg-transparent overflow-visible flex items-center justify-center">
       <Gravity
         gravity={{ x: 0, y: 1 }}
         className="w-full h-full"

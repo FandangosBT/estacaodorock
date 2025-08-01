@@ -7,11 +7,11 @@ import { GaleriaSection } from '@/components/GaleriaSection';
 import { InfoSection } from '@/components/InfoSection';
 import { SponsorsSection } from '@/components/SponsorsSection';
 import { QuizSection } from '@/components/QuizSection';
-import FooterSection from '@/components/FooterSection';
+import { DemoHeroScroll } from '@/components/ui/hero-scroll-animation-demo';
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
+    <div className="relative">
       <Navigation />
       <HeroSection />
       <AboutSection />
@@ -21,7 +21,7 @@ const Index = () => {
       <QuizSection />
       <GaleriaSection />
       <SponsorsSection />
-      <FooterSection />
+      <DemoHeroScroll />
     </div>
   );
 };

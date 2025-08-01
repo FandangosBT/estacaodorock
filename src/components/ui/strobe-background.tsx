@@ -74,7 +74,7 @@ export function StrobeBackground({
     <div
       ref={containerRef}
       className={cn(
-        "relative min-h-screen w-full overflow-hidden bg-black",
+        "relative min-h-screen w-full bg-black",
         className
       )}
     >
