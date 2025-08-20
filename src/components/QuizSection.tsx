@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Star, MessageCircle, Share2, RotateCcw, Guitar } from 'lucide-react';
+import { Share2, RotateCcw, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import '../styles/rock-styles.css';
+import StoryModal from '@/components/StoryModal';
 
 interface Question {
   id: number;
@@ -19,85 +18,120 @@ interface RockerType {
   title: string;
   description: string;
   emoji: string;
-  coupon: string;
   traits: string[];
 }
 
 const questions: Question[] = [
   {
     id: 1,
-    question: "Qual é a sua banda de rock favorita?",
+    question: "Qual frase mais representa seu estado de espírito em um show?",
     options: [
-      { text: "🎸 Metallica", value: "classic" },
-      { text: "⚡ AC/DC", value: "classic" },
-      { text: "🔥 Foo Fighters", value: "alternative" },
-      { text: "🎭 My Chemical Romance", value: "emo" }
-    ]
+      { text: '"Perdi a noção do tempo e fui embora com a luz"', value: "psychedelic" },
+      { text: '"Entrei no pogo e saí transformado"', value: "punk" },
+      { text: '"O grave bateu no peito como armadura"', value: "metal" },
+      { text: '"Fechei os olhos e cantei junto com o solo"', value: "classic" },
+    ],
   },
   {
     id: 2,
-    question: "Como você curte um show de rock?",
+    question: "Com quem você teria uma conversa de bar?",
     options: [
-      { text: "🤘 Na primeira fileira gritando", value: "hardcore" },
-      { text: "🍺 Relaxando com uma cerveja", value: "chill" },
-      { text: "📱 Gravando tudo no celular", value: "social" },
-      { text: "🎵 Cantando todas as músicas", value: "passionate" }
-    ]
+      { text: "Syd Barrett (Pink Floyd)", value: "psychedelic" },
+      { text: "Joe Strummer (The Clash)", value: "punk" },
+      { text: "Bruce Dickinson (Iron Maiden)", value: "metal" },
+      { text: "Freddie Mercury (Queen)", value: "classic" },
+    ],
   },
   {
     id: 3,
-    question: "Qual instrumento te representa?",
+    question: "Qual desses elementos te atrai mais no som?",
     options: [
-      { text: "🎸 Guitarra elétrica", value: "lead" },
-      { text: "🥁 Bateria", value: "rhythm" },
-      { text: "🎤 Vocal", value: "frontman" },
-      { text: "🎼 Baixo", value: "foundation" }
-    ]
+      { text: "Psicodelia e ambiência", value: "psychedelic" },
+      { text: "Crueza e velocidade", value: "punk" },
+      { text: "Peso e técnica", value: "metal" },
+      { text: "Harmonia e composição melódica", value: "classic" },
+    ],
   },
   {
     id: 4,
-    question: "Seu estilo de rock preferido:",
+    question: "Sua postura ao montar uma playlist:",
     options: [
-      { text: "⚫ Heavy Metal", value: "heavy" },
-      { text: "🌟 Rock Clássico", value: "classic" },
-      { text: "💀 Punk Rock", value: "punk" },
-      { text: "🎭 Rock Alternativo", value: "alternative" }
-    ]
-  }
+      { text: '"Ela precisa ter uma jornada sonora"', value: "psychedelic" },
+      { text: '"Só quero porradas certeiras de até 2 min"', value: "punk" },
+      { text: '"Vai ter solos e quebras de tempo, sim"', value: "metal" },
+      { text: '"Ela precisa contar uma história em ordem"', value: "classic" },
+    ],
+  },
+  {
+    id: 5,
+    question: "Você considera o rock:",
+    options: [
+      { text: "Uma linguagem cósmica e transcendental", value: "psychedelic" },
+      { text: "Uma arma cultural e política", value: "punk" },
+      { text: "Um ritual sonoro e físico", value: "metal" },
+      { text: "Uma arte de composição e performance", value: "classic" },
+    ],
+  },
+  {
+    id: 6,
+    question: "Se fosse montar uma banda, seria:",
+    options: [
+      { text: "Experimental com sintetizadores e visual retrô", value: "psychedelic" },
+      { text: "Trio cru de garagem com letras cortantes", value: "punk" },
+      { text: "Quinteto técnico com figurino e storytelling", value: "metal" },
+      { text: "Banda com arranjos épicos e performance vocal intensa", value: "classic" },
+    ],
+  },
+  {
+    id: 7,
+    question: "O cenário ideal para ouvir música:",
+    options: [
+      { text: "Sozinho com fones em um trem vazio", value: "psychedelic" },
+      { text: "No skate, na rua, com caixa bluetooth barulhenta", value: "punk" },
+      { text: "Na academia ou dirigindo à noite com tudo no talo", value: "metal" },
+      { text: "Num toca-discos analógico com capa na mão", value: "classic" },
+    ],
+  },
+  {
+    id: 8,
+    question: "Complete: o verdadeiro rockeiro...",
+    options: [
+      { text: "...se desconecta da realidade pelo som", value: "psychedelic" },
+      { text: "...não pede permissão, apenas toca", value: "punk" },
+      { text: "...vive cada nota como se fosse a última", value: "metal" },
+      { text: "...sabe que toda boa música é atemporal", value: "classic" },
+    ],
+  },
 ];
 
 const rockerTypes: Record<string, RockerType> = {
+  psychedelic: {
+    type: "psychedelic",
+    title: "VISIONÁRIO PSICODÉLICO",
+    description: "Você transcende a realidade através da música! Pink Floyd, The Doors e Jimi Hendrix são seus mestres. Você busca experiências sonoras que expandam a consciência e toquem a alma.",
+    emoji: "🌀",
+    traits: ["Visionário", "Transcendental", "Criativo", "Introspectivo"]
+  },
+  punk: {
+    type: "punk",
+    title: "REBELDE PUNK",
+    description: "Você é pura atitude e revolução! Sex Pistols, The Clash e Dead Kennedys são suas bandeiras. Você acredita que o rock é resistência e não aceita regras impostas.",
+    emoji: "🔥",
+    traits: ["Rebelde", "Autêntico", "Direto", "Revolucionário"]
+  },
+  metal: {
+    type: "metal",
+    title: "MESTRE DO METAL",
+    description: "Você vive pela intensidade e poder do metal! Black Sabbath, Iron Maiden e Metallica alimentam sua alma. Técnica, peso e energia brutal são sua linguagem universal.",
+    emoji: "⚡",
+    traits: ["Intenso", "Técnico", "Poderoso", "Apaixonado"]
+  },
   classic: {
     type: "classic",
-    title: "Roqueiro Clássico",
-    description: "Você é um verdadeiro conhecedor dos clássicos! Bandas como Led Zeppelin, Pink Floyd e The Rolling Stones fazem seu coração vibrar. Você aprecia a autenticidade e a história por trás de cada acorde.",
-    emoji: "🎸",
-    coupon: "CLASSIC20",
-    traits: ["Nostálgico", "Autêntico", "Tradicionalista", "Apaixonado por história"]
-  },
-  alternative: {
-    type: "alternative",
-    title: "Roqueiro Alternativo",
-    description: "Você está sempre em busca de novos sons e bandas underground. Seu gosto é eclético e você não tem medo de explorar subgêneros. A criatividade e originalidade são seus pontos fortes!",
-    emoji: "⚡",
-    coupon: "ALT15",
-    traits: ["Criativo", "Explorador", "Vanguardista", "Open-minded"]
-  },
-  hardcore: {
-    type: "hardcore",
-    title: "Roqueiro Hardcore",
-    description: "ENERGIA PURA! Você vive o rock com intensidade máxima. Wall of death, circle pit, crowd surfing - você está no meio de tudo! Sua paixão pelo rock é contagiante e visceral.",
-    emoji: "🔥",
-    coupon: "HARDCORE25",
-    traits: ["Intenso", "Corajoso", "Energético", "Apaixonado"]
-  },
-  chill: {
-    type: "chill",
-    title: "Roqueiro Zen",
-    description: "Você curte rock de uma forma mais relaxada e contemplativa. Prefere apreciar cada nota, cada letra, cada momento. Sua vibe é única e você sabe como aproveitar a música de verdade.",
-    emoji: "🧘",
-    coupon: "ZEN10",
-    traits: ["Contemplativo", "Equilibrado", "Sábio", "Observador"]
+    title: "CLÁSSICO ATEMPORAL",
+    description: "Você é guardião da essência do rock! Led Zeppelin, Queen e Rolling Stones são seus ídolos eternos. Você sabe que a verdadeira música transcende gerações e modismos.",
+    emoji: "👑",
+    traits: ["Clássico", "Sábio", "Atemporal", "Tradicionalista"]
   }
 };
 
@@ -124,23 +158,36 @@ export const QuizSection = () => {
   };
 
   const calculateResult = () => {
-    const answerCounts: Record<string, number> = {};
-    
-    Object.values(answers).forEach(answer => {
-      answerCounts[answer] = (answerCounts[answer] || 0) + 1;
+    // Construir contagem por arquétipo respeitando a ordem das respostas
+    const counts: Record<string, number> = { psychedelic: 0, punk: 0, metal: 0, classic: 0 };
+
+    // Obter respostas em ordem de pergunta (índice crescente)
+    const orderedAnswers = Object.keys(answers)
+      .map((k) => Number(k))
+      .sort((a, b) => a - b)
+      .map((idx) => answers[idx]);
+
+    orderedAnswers.forEach((value) => {
+      if (value in counts) counts[value] += 1;
     });
 
-    // Logic to determine result type based on answers
-    let resultType = 'classic'; // default
-    
-    if (answerCounts['hardcore'] >= 2) resultType = 'hardcore';
-    else if (answerCounts['alternative'] >= 2) resultType = 'alternative';
-    else if (answerCounts['chill'] >= 2) resultType = 'chill';
-    
+    const max = Math.max(...Object.values(counts));
+    const tied = Object.entries(counts)
+      .filter(([, v]) => v === max)
+      .map(([k]) => k);
+
+    let resultType = tied[0] || 'classic';
+
+    if (tied.length > 1) {
+      // Desempate: prioridade pela ordem das respostas
+      const firstInOrder = orderedAnswers.find((ans) => tied.includes(ans));
+      if (firstInOrder) resultType = firstInOrder;
+    }
+
     setResult(rockerTypes[resultType]);
-    
-    toast("Quiz concluído! 🎉", {
-      description: "Descubra que tipo de roqueiro você é!"
+
+    toast('Quiz concluído! 🎉', {
+      description: 'Descubra seu arquétipo roqueiro no festival',
     });
   };
 
@@ -170,182 +217,160 @@ export const QuizSection = () => {
     }
   };
 
-  const redeemCoupon = () => {
-    if (!result) return;
-    
-    const message = `🎸 Festival de Rock 2025\n\n🏆 Meu resultado: ${result.title} ${result.emoji}\n💸 Cupom: ${result.coupon}\n\nQuero resgatar meu desconto!`;
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
-    
-    toast("Cupom enviado para WhatsApp! 🎫", {
-      description: "Resgate seu desconto agora mesmo"
-    });
+  const [openStories, setOpenStories] = useState(false);
+
+  // Mapeamento pasta de stories por tipo
+  const getStoriesForResult = (type: string) => {
+    const base = '/stories';
+    const map: Record<string, string> = {
+      psychedelic: 'Psicodelico',
+      punk: 'Punk',
+      metal: 'Metal',
+      classic: 'Classico',
+    };
+    const folder = map[type] || 'Classico';
+    const path = `${base}/${folder}`;
+    return [1,2,3,4,5].map(i => ({
+      src: `${path}/slide${i}.png`,
+      alt: `Story ${folder} ${i}`,
+    }));
   };
 
   if (result) {
     return (
-      <section id="quiz" className="bg-black py-20 px-6">
-        <div className="bg-[#0f0f0f] border border-white/10 rounded-lg px-6 py-8 max-w-3xl mx-auto shadow-[0_0_12px_#ff2a2a66]">
-          {/* Title */}
-          <h2 className="text-4xl lg:text-5xl font-bold uppercase tracking-wider text-[#ff2a2a] text-center drop-shadow-[0_0_2px_#ff2a2a]">
-            QUIZ ROCK
-          </h2>
-          <p className="text-[#f0f0f0] text-center text-sm mt-2 mb-8">
-            Resultado do seu perfil roqueiro
-          </p>
-
-          {/* Result Header */}
-          <div className="text-center mb-8">
-            <div className="text-6xl mb-4">{result.emoji}</div>
-            <h3 className="text-2xl md:text-3xl font-bold text-[#f0f0f0] drop-shadow-[0_0_3px_#ff2a2a] text-center mb-4">
-              {result.title}
-            </h3>
-            <div className="flex justify-center gap-2 mb-6">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="w-6 h-6 text-[#ffbd00] fill-current" />
-              ))}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="mb-8">
-            <p className="text-[#f0f0f0] text-lg leading-relaxed mb-6 text-center">
-              {result.description}
-            </p>
-            
-            {/* Traits */}
-            <div className="grid grid-cols-2 gap-3">
-              {result.traits.map((trait, index) => (
-                <div 
-                  key={trait} 
-                  className="bg-[#111] border border-white/20 text-[#f0f0f0] px-4 py-2 rounded-md text-sm font-bold text-center uppercase tracking-wide"
-                  style={{
-                    animationDelay: `${index * 0.1}s`,
-                    animation: 'fade-in 0.6s ease-out forwards'
-                  }}
-                >
-                  {trait}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Coupon */}
-          <div className="bg-[#111] border border-[#ff2a2a] rounded-md p-6 mb-8">
-            <h4 className="text-[#ffbd00] text-xl font-bold uppercase tracking-wider text-center mb-3">
-              🎫 CUPOM EXCLUSIVO
-            </h4>
-            <div className="bg-[#0f0f0f] border-2 border-[#ff2a2a] rounded-md p-4 text-center mb-3">
-              <span className="text-[#ff2a2a] text-2xl font-bold tracking-widest">
-                {result.coupon}
-              </span>
-            </div>
-            <p className="text-[#f0f0f0] text-sm text-center font-medium">
-              Use este cupom para ganhar desconto nos ingressos!
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={redeemCoupon}
-              className="bg-[#ff2a2a] text-[#f0f0f0] px-6 py-4 rounded-md font-bold uppercase tracking-wide transition hover:bg-[#111] hover:text-[#ff2a2a] hover:border-2 hover:border-[#ff2a2a] flex items-center justify-center gap-2"
-            >
-              <MessageCircle className="w-5 h-5" />
-              RESGATAR
-            </button>
-            <button
-              onClick={shareResult}
-              className="bg-[#ffbd00] text-black px-6 py-4 rounded-md font-bold uppercase tracking-wide transition hover:bg-[#111] hover:text-[#ffbd00] hover:border-2 hover:border-[#ffbd00] flex items-center justify-center gap-2"
-            >
-              <Share2 className="w-5 h-5" />
-              COMPARTILHAR
-            </button>
-            <button
-              onClick={resetQuiz}
-              className="bg-[#111] text-[#f0f0f0] border border-white/20 px-6 py-4 rounded-md font-bold uppercase tracking-wide transition hover:bg-[#f0f0f0] hover:text-black flex items-center justify-center gap-2"
-            >
-              <RotateCcw className="w-5 h-5" />
-              REFAZER
-            </button>
+      <div className="w-full">
+        {/* Resultado em estilo grunge/cartaz */}
+        <div className="relative text-center mb-4">
+          <div className="text-5xl mb-3">{result.emoji}</div>
+          <h3 className="text-xl md:text-2xl font-bold font-queenrocker uppercase tracking-wider text-white drop-shadow-[3px_3px_0_#000] mb-3">
+            {result.title}
+          </h3>
+          <div className="flex justify-center gap-1 mb-4" aria-hidden="true">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star key={i} className="w-4 h-4 text-[#ffbd00] fill-current" />
+            ))}
           </div>
         </div>
-      </section>
+
+        {/* Descrição */}
+        <div className="mb-4">
+          <p className="text-white/90 text-sm leading-relaxed mb-4 text-center">
+            {result.description}
+          </p>
+          
+          {/* Traits em blocos grunge */}
+          <div className="grid grid-cols-2 gap-2 mb-4 sm:grid-cols-2 md:grid-cols-4">
+            {result.traits.map((trait, index) => (
+              <div 
+                key={trait} 
+                className="bg-[#ffbd00] text-black px-2 py-2 text-[10px] sm:text-xs font-bold text-center uppercase tracking-wide border-2 border-black shadow-[3px_3px_0_#000] transform rotate-[-1deg] even:rotate-[1deg] font-queenrocker break-words whitespace-normal"
+              >
+                {trait}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Botões de ação em grid de 3 colunas */}
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            onClick={() => setOpenStories(true)}
+            className="bg-black text-[#ffbd00] px-3 py-2 text-xs font-bold uppercase tracking-wide transition hover:bg-[#ffbd00] hover:text-black hover:border-2 hover:border-black flex items-center justify-center gap-1 border-2 border-[#ffbd00] shadow-[3px_3px_0_#000] font-queenrocker"
+          >
+            Ver Stories
+          </button>
+          <button
+            onClick={shareResult}
+            className="bg-[#ffbd00] text-black px-3 py-2 text-xs font-bold uppercase tracking-wide transition hover:bg-black hover:text-[#ffbd00] hover:border-2 hover:border-[#ffbd00] flex items-center justify-center gap-1 border-2 border-black shadow-[3px_3px_0_#000] font-queenrocker"
+          >
+            <Share2 className="w-3 h-3" />
+            SHARE
+          </button>
+          <button
+            onClick={resetQuiz}
+            className="bg-white text-black px-3 py-2 text-xs font-bold uppercase tracking-wide transition hover:bg-black hover:text-white hover:border-2 hover:border-white flex items-center justify-center gap-1 border-2 border-black shadow-[3px_3px_0_#000] font-queenrocker"
+          >
+            <RotateCcw className="w-3 h-3" />
+            REFAZER
+          </button>
+        </div>
+
+        {/* Modal de Stories */}
+        <StoryModal
+          open={openStories}
+          onOpenChange={setOpenStories}
+          title={`Stories — ${result.title}`}
+          slides={getStoriesForResult(result.type)}
+        />
+      </div>
     );
   }
 
   return (
-    <section id="quiz" className="bg-black py-20 px-6">
-      <div className="bg-[#0f0f0f] border border-white/10 rounded-lg px-6 py-8 max-w-3xl mx-auto shadow-[0_0_12px_#ff2a2a66]">
-        {/* Title & Subtitle */}
-        <h2 className="text-4xl lg:text-5xl font-bold uppercase tracking-wider text-[#ff2a2a] text-center drop-shadow-[0_0_2px_#ff2a2a]">
-          QUIZ ROCK
-        </h2>
-        <p className="text-[#f0f0f0] text-center text-sm mt-2 mb-8">
-          Descubra que tipo de roqueiro você é
-        </p>
-        
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs text-gray-400">PROGRESSO</span>
-            <span className="text-xs text-gray-400 text-right">
-              {currentQuestion + 1}/{questions.length}
-            </span>
-          </div>
-          <div className="relative h-2 w-full bg-[#1a1a1a] rounded-full overflow-hidden">
-            <div 
-              className="absolute left-0 top-0 h-2 bg-[#ff2a2a] transition-all ease-in-out duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+    <div className="w-full">
+      {/* Progress Bar estilo fita cassete */}
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-xs text-white/70 font-bold uppercase font-queenrocker">PROGRESSO</span>
+          <span className="text-xs text-white/70 font-bold uppercase font-queenrocker">
+            {currentQuestion + 1}/{questions.length}
+          </span>
         </div>
-
-        {/* Question */}
-        <div className={`transition-all duration-300 ${isAnimating ? 'animate-pulse' : ''}`}>
-          <h3 className="text-2xl md:text-3xl font-bold text-[#f0f0f0] drop-shadow-[0_0_3px_#ff2a2a] text-center mt-6 mb-6">
-            {questions[currentQuestion].question}
-          </h3>
-
-          {/* Answer Options */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            {questions[currentQuestion].options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleAnswer(option.value)}
-                className={`bg-[#111] border border-white/20 text-[#f0f0f0] py-3 px-4 rounded-md text-left hover:border-[#ff2a2a] hover:bg-[#1a1a1a] hover:scale-105 transition-all duration-200 font-medium ${
-                  answers[currentQuestion] === option.value 
-                    ? 'border-[#ff2a2a] bg-[#1a1a1a] text-[#ff2a2a]' 
-                    : ''
-                }`}
-                style={{
-                  animationDelay: `${index * 0.1}s`,
-                  animation: 'fade-in 0.6s ease-out forwards'
-                }}
-              >
-                <span className="text-lg mr-2">{option.text.split(' ')[0]}</span>
-                <span>{option.text.substring(option.text.indexOf(' ') + 1)}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Question Indicators */}
-          <div className="flex justify-center gap-2 mt-8">
-            {questions.map((_, index) => (
-              <div
-                key={index}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index < currentQuestion
-                    ? 'bg-[#ff2a2a]'
-                    : index === currentQuestion
-                    ? 'bg-[#ffbd00] ring-2 ring-[#ffbd00]/50'
-                    : 'bg-[#333]'
-                }`}
-              />
-            ))}
-          </div>
+        <div className="cassette-progress">
+          <div 
+            className="cassette-progress-fill"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
-    </section>
+
+      {/* Pergunta com rotação leve */}
+      <div className={`transition-all duration-300 ${isAnimating ? 'animate-pulse' : ''} mb-6`}>
+        <h3 className="text-lg md:text-xl font-bold text-white text-center transform rotate-[-2deg] mb-4 font-bold uppercase tracking-wide">
+          {questions[currentQuestion].question}
+        </h3>
+
+        {/* Opções em blocos grunge */}
+        <div className="grid grid-cols-1 gap-3">
+          {questions[currentQuestion].options.map((option, index) => (
+            <button
+              key={index}
+              onClick={() => handleAnswer(option.value)}
+              className={`text-left py-3 px-4 text-sm font-semibold transition-all duration-200 transform hover:scale-105 border-2 border-black shadow-[4px_4px_0_#000] uppercase tracking-wide ${
+                index % 2 === 0
+                  ? 'bg-[#ffbd00] text-black hover:bg-[#ff2a2a] hover:text-white'
+                  : 'bg-[#ff69b4] text-black hover:bg-[#ff2a2a] hover:text-white'
+              } ${
+                answers[currentQuestion] === option.value 
+                  ? 'bg-[#ff2a2a] text-white scale-105' 
+                  : ''
+              }`}
+              style={{
+                animationDelay: `${index * 0.1}s`,
+                animation: 'fade-in 0.6s ease-out forwards'
+              }}
+            >
+              {option.text}
+            </button>
+          ))}
+        </div>
+
+        {/* Indicadores de progresso estilo fita isolante */}
+        <div className="flex justify-center gap-1 mt-4">
+          {questions.map((_, index) => (
+            <div
+              key={index}
+              className={`w-4 h-2 transition-all duration-300 tape-indicator ${
+                index < currentQuestion
+                  ? 'bg-[#ff2a2a] border-black'
+                  : index === currentQuestion
+                  ? 'bg-[#ffbd00] border-black ring-1 ring-[#ffbd00]'
+                  : 'bg-white/30 border-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };

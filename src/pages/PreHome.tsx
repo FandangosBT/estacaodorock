@@ -1,114 +1,82 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
+import { useEffect, useRef, useState } from "react";
 
 export default function PreHome({ onEnter }: { onEnter: () => void }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const logoRef = useRef<HTMLImageElement | null>(null);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const microcopyRef = useRef<HTMLParagraphElement | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [useFallback, setUseFallback] = useState(false);
 
   useEffect(() => {
-    // Timeline de pulse contínuo para logo e botão
-    const pulse = gsap.timeline({ repeat: -1, yoyo: true });
-    pulse.to([logoRef.current, buttonRef.current], {
-      scale: 1.05,
-      duration: 0.75,
-      ease: "power1.inOut",
-    });
-  }, []);
+    const v = videoRef.current;
+    if (!v) return;
 
-  const handleEnter = () => {
-    const tl = gsap.timeline({
-      onComplete: () => {
-        onEnter(); // Transição para Page Loader
-      },
-    });
+    let fallbackTimeout: number | undefined;
 
-    // Reproduz áudio do apito
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    }
+    const goNext = () => {
+      // Evita múltiplas chamadas
+      if (fallbackTimeout !== undefined) {
+        window.clearTimeout(fallbackTimeout);
+        fallbackTimeout = undefined;
+      }
+      onEnter();
+    };
 
-    // Shake do logo sincronizado com o áudio
-    tl.to(logoRef.current, {
-      keyframes: [
-        { x: -10 },
-        { x: 10 },
-        { x: -8 },
-        { x: 8 },
-        { x: -5 },
-        { x: 5 },
-        { x: 0 },
-      ],
-      duration: 0.6,
-      ease: "power2.inOut",
+    const handleEnded = () => goNext();
+    const handleError = () => {
+      // Ativa fallback visual e deixa o timeout seguir com a navegação
+      setUseFallback(true);
+    };
+
+    v.addEventListener("ended", handleEnded);
+    v.addEventListener("error", handleError);
+
+    // Tentar garantir o play (alguns browsers podem bloquear, mas como está mudo deve tocar)
+    v.play().catch(() => {
+      // Se falhar, ativamos fallback visual e aguardamos o timeout existente
+      setUseFallback(true);
     });
 
-    // Botão faz bounce e desaparece
-    tl.to(
-      buttonRef.current,
-      {
-        scale: 0,
-        opacity: 0,
-        duration: 0.5,
-        ease: "back.in(1.7)",
-      },
-      "<" // Começa junto com o shake
-    );
+    // Fallback: se o vídeo não disparar ended (ou for muito curto), seguimos após 3.2s
+    fallbackTimeout = window.setTimeout(goNext, 3200);
 
-    // Microcopy fade-out
-    tl.to(
-      microcopyRef.current,
-      {
-        opacity: 0,
-        duration: 0.3,
-      },
-      "<"
-    );
-
-    // Fade-out do container
-    tl.to(containerRef.current, {
-      opacity: 0,
-      duration: 0.8,
-      ease: "power2.inOut",
-    });
-  };
+    return () => {
+      v.removeEventListener("ended", handleEnded);
+      v.removeEventListener("error", handleError);
+      if (fallbackTimeout !== undefined) window.clearTimeout(fallbackTimeout);
+    };
+  }, [onEnter]);
 
   return (
-    <div
-      ref={containerRef}
-      className="relative w-full h-screen bg-black flex flex-col items-center justify-center overflow-hidden"
-    >
-      <audio ref={audioRef} src="/audio/train-whistle.MP3" preload="auto" />
-
-      {/* Logo pulsante com shake via GSAP */}
-      <img
-        ref={logoRef}
-        src="/logo.svg"
-        alt="Estação Rock"
-        className="w-[220px] md:w-[260px] lg:w-[300px] mb-12"
-      />
-
-      {/* Botão Entrar */}
-      <button
-        ref={buttonRef}
-        onClick={handleEnter}
-        className="px-8 py-3 bg-[#ffbd00] text-black font-bold rounded-lg shadow-[0_0_20px_#ffbd00aa] hover:scale-105 hover:shadow-[0_0_30px_#ffbd00ff] transition-all"
+    <div className="relative w-full h-screen bg-black overflow-hidden">
+      <video
+        ref={videoRef}
+        className="absolute inset-0 w-full h-full object-cover"
+        preload="auto"
+        autoPlay
+        playsInline
+        muted
+        poster="/logo.svg"
+        aria-label="Abertura animada Estação do Rock"
+        onError={() => setUseFallback(true)}
       >
-        Entrar
-      </button>
+        <source src="/video/animated-logo.mp4" type="video/mp4" />
+        <p>Seu navegador não suporta vídeo HTML5.</p>
+      </video>
 
-      {/* Microcopy */}
-      <p
-        ref={microcopyRef}
-        className="text-white/80 text-sm mt-6 transition-opacity duration-500"
-      >
-        Aperte o play e já comece a sair da linha!
-      </p>
+      {useFallback && (
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-black"
+          aria-hidden="true"
+        >
+          <img
+            src="/logo.svg"
+            alt="Logomarca Estação do Rock"
+            className="w-40 h-40 md:w-56 md:h-56 animate-pulse drop-shadow-[6px_6px_0_#ff2a2a]"
+            loading="eager"
+            decoding="sync"
+          />
+        </div>
+      )}
     </div>
   );
 }

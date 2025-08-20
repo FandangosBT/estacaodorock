@@ -81,6 +81,7 @@ export default {
 			fontFamily: {
 				heading: ['"Bebas Neue"', "sans-serif"],
 				body: ['"Roboto Condensed"', "sans-serif"],
+				queenrocker: ['"Queen Rocker"', 'sans-serif'],
 			},
 			boxShadow: {
 				neonRed: "0 0 15px #ff2a2a",

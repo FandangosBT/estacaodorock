@@ -16,7 +16,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({ onNavigate }
 
   const navigationItems = [
     { id: 'home', label: 'Início', icon: Home },
-    { id: 'lineup', label: 'Line-up', icon: Music },
+    // { id: 'lineup', label: 'Line-up', icon: Music },
     { id: 'schedule', label: 'Programação', icon: Calendar },
     { id: 'artists', label: 'Artistas', icon: Users },
     { id: 'quiz', label: 'Quiz', icon: Gift },

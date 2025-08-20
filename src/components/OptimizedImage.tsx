@@ -5,13 +5,16 @@ import { cn } from '@/lib/utils';
 interface OptimizedImageProps {
   src: string;
   alt: string;
-  className?: string;
+  className?: string; // additional classes for container
   mobileSrc?: string;
   tabletSrc?: string;
   lazy?: boolean;
   placeholder?: string;
   onLoad?: () => void;
   onError?: () => void;
+  containerClassName?: string; // override container background/shape
+  imgClassName?: string; // override image object-fit behavior
+  placeholderClassName?: string; // override placeholder overlay background
 }
 
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({
@@ -24,6 +27,9 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   placeholder,
   onLoad,
   onError,
+  containerClassName = 'bg-muted',
+  imgClassName,
+  placeholderClassName,
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -79,13 +85,14 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     <div
       ref={imgRef}
       className={cn(
-        'relative overflow-hidden bg-muted',
+        'relative overflow-hidden',
+        containerClassName,
         className
       )}
     >
       {/* Placeholder */}
       {(!isLoaded || !shouldShowImage) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted">
+        <div className={cn('absolute inset-0 flex items-center justify-center', placeholderClassName ?? 'bg-muted')}>
           {placeholder ? (
             <img
               src={placeholder}
@@ -93,7 +100,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
               className="w-full h-full object-cover opacity-50 blur-sm"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/20 animate-pulse" />
+            <div className={cn('w-full h-full bg-gradient-to-br from-muted to-muted-foreground/20 animate-pulse', placeholderClassName)} />
           )}
         </div>
       )}
@@ -104,7 +111,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
           src={imageSrc}
           alt={alt}
           className={cn(
-            'w-full h-full object-cover transition-opacity duration-300',
+            imgClassName ?? 'w-full h-full object-cover transition-opacity duration-300',
             isLoaded ? 'opacity-100' : 'opacity-0'
           )}
           onLoad={handleLoad}

@@ -56,18 +56,20 @@ export function GravityTextFooter() {
       // Cria elemento HTML correspondente
       const div = document.createElement("div");
       div.className = `absolute px-6 py-3 bg-[#111111] border border-[#ff2a2a] 
-        font-bold uppercase rounded-md shadow-lg text-xl ${word.color} cursor-grab`;
+        font-bold uppercase rounded-md shadow-lg text-xl ${word.color}`;
       div.style.width = "200px";
       div.style.height = "60px";
       div.style.display = "flex";
       div.style.alignItems = "center";
       div.style.justifyContent = "center";
+      div.style.pointerEvents = "none"; // Prevent blocking scrolls
 
       if (word.link) {
         const a = document.createElement("a");
         a.href = word.link;
         a.textContent = word.text;
         a.target = "_blank";
+        a.style.pointerEvents = "auto"; // Re-enable for links
         div.appendChild(a);
       } else {
         div.textContent = word.text;
@@ -93,14 +95,6 @@ export function GravityTextFooter() {
       return block;
     });
 
-    // Mouse para arrastar blocos - limitado ao container
-    const mouse = Mouse.create(container);
-    const mouseConstraint = MouseConstraint.create(engine, {
-      mouse,
-      constraint: { stiffness: 0.2, render: { visible: false } },
-    });
-    World.add(world, mouseConstraint);
-
     // Runner sem render de canvas
     const runner = Runner.create();
     Runner.run(runner, engine);
@@ -116,7 +110,11 @@ export function GravityTextFooter() {
     <div
       ref={scene}
       className="relative w-full h-[350px] bg-transparent overflow-visible"
-      style={{ position: 'relative', zIndex: 1 }}
+      style={{ 
+        position: 'relative', 
+        zIndex: 1,
+        pointerEvents: 'none' // Don't interfere with page scroll
+      }}
     />
   );
 }

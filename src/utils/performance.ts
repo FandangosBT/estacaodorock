@@ -329,3 +329,98 @@ export function useVirtualScrolling({
     handleScroll
   }
 }
+
+// Device performance detection
+export function useDevicePerformance() {
+  const [isLowEnd, setIsLowEnd] = useState<boolean>(false)
+  const [deviceInfo, setDeviceInfo] = useState<{
+    memory?: number
+    cores?: number
+    saveData?: boolean
+    connection?: any
+  }>({})
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const nav = navigator as any
+    
+    // Collect device info
+    const memory = nav.deviceMemory || undefined
+    const cores = nav.hardwareConcurrency || undefined
+    const saveData = nav.connection?.saveData || false
+    const connection = nav.connection || undefined
+
+    setDeviceInfo({ memory, cores, saveData, connection })
+
+    // Low-end heuristic: deviceMemory ≤ 4GB OR hardwareConcurrency ≤ 4 OR Save-Data=on
+    const isLowEndDevice = 
+      (memory && memory <= 4) ||
+      (cores && cores <= 4) ||
+      saveData
+
+    setIsLowEnd(Boolean(isLowEndDevice))
+  }, [])
+
+  return { isLowEnd, deviceInfo }
+}
+
+// Video optimization hook for offscreen pause/resume
+export function useVideoOffscreen(
+  videoRef: React.RefObject<HTMLVideoElement>,
+  options: {
+    rootMargin?: string
+    threshold?: number
+    pauseWhenOffscreen?: boolean
+    resumeWhenVisible?: boolean
+  } = {}
+) {
+  const [isVisible, setIsVisible] = useState(false)
+  const wasPlayingRef = useRef(false)
+  
+  const {
+    rootMargin = '0px',
+    threshold = 0.1,
+    pauseWhenOffscreen = true,
+    resumeWhenVisible = true
+  } = options
+
+  useEffect(() => {
+    if (!videoRef.current) return
+
+    const video = videoRef.current
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = isVisible
+        const nowVisible = entry.isIntersecting
+        
+        setIsVisible(nowVisible)
+        
+        if (!wasVisible && nowVisible && resumeWhenVisible) {
+          // Entering viewport - resume if it was playing
+          if (wasPlayingRef.current && video.paused) {
+            video.play().catch(() => {
+              // Ignore autoplay policy errors
+            })
+          }
+        } else if (wasVisible && !nowVisible && pauseWhenOffscreen) {
+          // Leaving viewport - pause and remember state
+          if (!video.paused) {
+            wasPlayingRef.current = true
+            video.pause()
+          }
+        }
+      },
+      { rootMargin, threshold }
+    )
+
+    observer.observe(video)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [videoRef, rootMargin, threshold, pauseWhenOffscreen, resumeWhenVisible, isVisible])
+
+  return { isVisible }
+}

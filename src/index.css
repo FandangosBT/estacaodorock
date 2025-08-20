@@ -1,5 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Anton&family=Bebas+Neue&family=Roboto+Condensed:wght@300;400;700&display=swap');
 
+@font-face {
+  font-family: 'Queen Rocker';
+  src: url('/fonts/queen-rocker/queen-rocker.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -1067,4 +1075,88 @@ Paleta de cores sombria e energética para festivais de rua.
 
 .animate-link-flicker {
   animation: link-flicker 2s linear 1;
+}
+
+/* === UTILITÁRIOS GRUNGE/STENCIL PARA QUIZ & PLAYLIST === */
+@layer components {
+  /* Fonte Queen Rocker utilitária */
+  .font-queenrocker {
+    font-family: 'Queen Rocker', 'Bebas Neue', 'Anton', sans-serif;
+    letter-spacing: 0.06em;
+  }
+
+  /* Barra tipo fita cassete (casca) */
+  .cassette-bar {
+    position: relative;
+    height: 16px;
+    background: #0a0a0a;
+    border: 4px solid #ff2a2a;
+    box-shadow: inset 0 0 0 2px #000, 0 2px 0 #000;
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  /* Preenchimento com rabisco */
+  .cassette-fill {
+    height: 100%;
+    background-image:
+      repeating-linear-gradient(
+        -45deg,
+        rgba(255,255,255,0.18) 0px,
+        rgba(255,255,255,0.18) 6px,
+        rgba(255,255,255,0) 6px,
+        rgba(255,255,255,0) 12px
+      );
+    background-color: #ff2a2a;
+    mix-blend-mode: screen;
+    transition: width 0.5s ease-in-out;
+  }
+
+  /* Moldura estilo vinil/cartaz para embeds */
+  .vinyl-frame {
+    background: radial-gradient(circle at 30% 30%, rgba(0,0,0,0.8) 0%, rgba(0,0,0,1) 60%), #000;
+    border: 4px solid #000;
+    box-shadow: 8px 8px 0 #000, 0 0 0 4px #ff2a2a, 0 12px 24px rgba(0,0,0,0.8);
+  }
+
+  /* Efeito fita isolante nos cantos */
+  .tape-corners { position: relative; }
+  .tape-corners::before,
+  .tape-corners::after {
+    content: '';
+    position: absolute;
+    width: 58px;
+    height: 14px;
+    background: rgba(20,20,20,0.95);
+    top: -10px;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.6);
+  }
+  .tape-corners::before { left: 10px; transform: rotate(-8deg); }
+  .tape-corners::after { right: 10px; transform: rotate(8deg); }
+
+  /* Botão bilhete (ticket) */
+  .btn-ticket {
+    @apply uppercase font-extrabold tracking-wider;
+    background: #ffbd00;
+    color: #0a0a0a;
+    border: 4px solid #000;
+    box-shadow: 6px 6px 0 #000;
+    border-radius: 0;
+    transition: transform .15s ease, box-shadow .15s ease, background-color .2s ease;
+  }
+  .btn-ticket:hover { transform: translateY(1px); box-shadow: 4px 4px 0 #000; background: #ffd84d; }
+  .btn-ticket:active { transform: translateY(2px); box-shadow: 2px 2px 0 #000; }
+}
+/* Oculta UI nativa do vídeo quando necessário */
+.no-native-controls::-webkit-media-controls-enclosure,
+.no-native-controls::-webkit-media-controls-panel,
+.no-native-controls::-webkit-media-controls {
+  display: none !important;
+  -webkit-appearance: none;
+}
+
+.no-native-controls::-moz-media-controls-enclosure,
+.no-native-controls::-moz-media-controls-panel,
+.no-native-controls::-moz-media-controls {
+  display: none !important;
 }

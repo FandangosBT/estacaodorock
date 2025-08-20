@@ -1,6 +1,6 @@
 const CACHE_NAME = 'festival-rock-v1';
-const STATIC_CACHE = 'festival-static-v1';
-const DYNAMIC_CACHE = 'festival-dynamic-v1';
+const STATIC_CACHE = 'festival-static-v2';
+const DYNAMIC_CACHE = 'festival-dynamic-v2';
 
 // Recursos essenciais para cache
 const STATIC_ASSETS = [
@@ -65,6 +65,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // 1) Evita lidar com requisições de mídia/Range que retornam 206 (parcial)
+  const isRangeRequest = request.headers.has('range');
+  const isMedia = request.destination === 'video' || request.destination === 'audio';
+  if (isRangeRequest || isMedia) {
+    event.respondWith(fetch(request));
+    return;
+  }
   
   // Estratégia Cache First para recursos estáticos
   if (STATIC_ASSETS.some(asset => url.pathname.endsWith(asset))) {
@@ -76,19 +84,25 @@ self.addEventListener('fetch', (event) => {
           }
           return fetch(request)
             .then((response) => {
-              const responseClone = response.clone();
-              caches.open(STATIC_CACHE)
-                .then((cache) => {
-                  cache.put(request, responseClone);
-                });
+              // Só coloca no cache respostas completas e do mesmo domínio
+              if (
+                response && response.ok && response.status !== 206 &&
+                request.method === 'GET' && response.type === 'basic'
+              ) {
+                const responseClone = response.clone();
+                caches.open(STATIC_CACHE)
+                  .then((cache) => {
+                    cache.put(request, responseClone).catch(() => {});
+                  });
+              }
               return response;
+            })
+            .catch(() => {
+              // Fallback para página offline
+              if (request.destination === 'document') {
+                return caches.match('/offline.html');
+              }
             });
-        })
-        .catch(() => {
-          // Fallback para página offline
-          if (request.destination === 'document') {
-            return caches.match('/offline.html');
-          }
         })
     );
     return;
@@ -99,12 +113,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache apenas respostas bem-sucedidas
-          if (response.status === 200) {
+          // Cache apenas respostas bem-sucedidas e completas
+          if (response && response.ok && response.status !== 206 && response.type === 'basic') {
             const responseClone = response.clone();
             caches.open(DYNAMIC_CACHE)
               .then((cache) => {
-                cache.put(request, responseClone);
+                cache.put(request, responseClone).catch(() => {});
               });
           }
           return response;
@@ -143,11 +157,17 @@ self.addEventListener('fetch', (event) => {
       .then((cachedResponse) => {
         const fetchPromise = fetch(request)
           .then((response) => {
-            const responseClone = response.clone();
-            caches.open(DYNAMIC_CACHE)
-              .then((cache) => {
-                cache.put(request, responseClone);
-              });
+            // Cache somente respostas completas do mesmo domínio
+            if (
+              response && response.ok && response.status !== 206 &&
+              request.method === 'GET' && response.type === 'basic'
+            ) {
+              const responseClone = response.clone();
+              caches.open(DYNAMIC_CACHE)
+                .then((cache) => {
+                  cache.put(request, responseClone).catch(() => {});
+                });
+            }
             return response;
           })
           .catch(() => {

@@ -1,47 +1,60 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import React from 'react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { BrowserRouter } from 'react-router-dom'
 
-// Mock component for testing
-function TestComponent({ onClick, children }: { onClick?: () => void; children: React.ReactNode }) {
-  return (
-    <button onClick={onClick} data-testid="test-button">
-      {children}
-    </button>
-  )
-}
+describe('Example tests', () => {
+  beforeEach(() => {
+    cleanup() // Evitar interferências do DOM entre testes
+  })
 
-// Mock async component
-function AsyncTestComponent({ delay = 100 }: { delay?: number }) {
-  const [loading, setLoading] = React.useState(true)
-  const [data, setData] = React.useState<string | null>(null)
-  
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setData('Loaded data')
-      setLoading(false)
-    }, delay)
-    
-    return () => clearTimeout(timer)
-  }, [delay])
-  
-  if (loading) {
-    return <div data-testid="loading">Loading...</div>
-  }
-  
-  return <div data-testid="data">{data}</div>
-}
+  it('should add numbers correctly', () => {
+    const add = (a: number, b: number) => a + b
+    expect(add(2, 3)).toBe(5)
+  })
 
-describe('Test Configuration', () => {
   it('should render a simple component', () => {
-    render(<TestComponent>Hello World</TestComponent>)
+    const TestComponent = () => <div>Hello World</div>
+    render(<TestComponent />)
     
-    expect(screen.getByTestId('test-button')).toBeInTheDocument()
     expect(screen.getByText('Hello World')).toBeInTheDocument()
   })
-  
-  it('should handle click events', () => {
+
+  it('should handle async operations', async () => {
+    const asyncFn = async () => {
+      return new Promise(resolve => setTimeout(() => resolve('done'), 100))
+    }
+    
+    const result = await asyncFn()
+    expect(result).toBe('done')
+  })
+
+  it('should mock functions correctly', () => {
+    const mockFn = vi.fn()
+    mockFn('test')
+    
+    expect(mockFn).toHaveBeenCalledWith('test')
+    expect(mockFn).toHaveBeenCalledTimes(1)
+  })
+
+  it('should render with router', () => {
+    const TestComponent = () => (
+      <BrowserRouter>
+        <div>Router Test</div>
+      </BrowserRouter>
+    )
+    
+    render(<TestComponent />)
+    expect(screen.getByText('Router Test')).toBeInTheDocument()
+  })
+
+  it('should handle button clicks', () => {
     const handleClick = vi.fn()
+    const TestComponent = ({ children, onClick }: any) => (
+      <button data-testid="test-button" onClick={onClick}>
+        {children}
+      </button>
+    )
+    
     render(<TestComponent onClick={handleClick}>Click me</TestComponent>)
     
     const button = screen.getByTestId('test-button')
@@ -49,94 +62,34 @@ describe('Test Configuration', () => {
     
     expect(handleClick).toHaveBeenCalledTimes(1)
   })
-  
-  it('should render with basic setup', () => {
-    render(<TestComponent>Basic Setup</TestComponent>)
-    
-    expect(screen.getByText('Basic Setup')).toBeInTheDocument()
-  })
-  
-  it('should handle async operations', async () => {
-    render(<AsyncTestComponent delay={50} />)
-    
-    // Initially should show loading
-    expect(screen.getByTestId('loading')).toBeInTheDocument()
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
-    
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByTestId('data')).toBeInTheDocument()
-    })
-    
-    expect(screen.getByText('Loaded data')).toBeInTheDocument()
-    expect(screen.queryByTestId('loading')).not.toBeInTheDocument()
-  })
-  
-  it('should mock functions correctly', () => {
-    const mockFn = vi.fn()
-    mockFn('test', 123)
-    
-    expect(mockFn).toHaveBeenCalledWith('test', 123)
-    expect(mockFn).toHaveBeenCalledTimes(1)
-  })
-  
-  it('should handle timers', () => {
-    vi.useFakeTimers()
-    
-    const callback = vi.fn()
-    setTimeout(callback, 1000)
-    
-    expect(callback).not.toHaveBeenCalled()
-    
-    vi.advanceTimersByTime(1000)
-    
-    expect(callback).toHaveBeenCalledTimes(1)
-    
-    vi.useRealTimers()
-  })
-})
 
-describe('Store Integration', () => {
-  it('should work with Zustand stores', () => {
-    // This test demonstrates that our test setup works with Zustand
-    // We'll add actual store tests when we implement components that use them
-    expect(true).toBe(true)
+  it('should work with queries', async () => {
+    const TestComponent = () => (
+      <div>
+        <h1>Title</h1>
+        <p>Description</p>
+      </div>
+    )
+    
+    render(<TestComponent />)
+    
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
+    expect(screen.getByText('Description')).toBeInTheDocument()
   })
-})
 
-describe('Performance Utilities', () => {
-  it('should test debounce functionality', () => {
-    vi.useFakeTimers()
+  it('should handle form inputs', () => {
+    const TestForm = () => (
+      <form>
+        <input type="text" placeholder="Enter name" />
+        <button type="submit">Submit</button>
+      </form>
+    )
     
-    const callback = vi.fn()
-    const debouncedFn = vi.fn()
+    render(<TestForm />)
     
-    // Mock implementation of debounce for testing
-    let timeoutId: NodeJS.Timeout
-    const debounce = (fn: Function, delay: number) => {
-      return (...args: any[]) => {
-        clearTimeout(timeoutId)
-        timeoutId = setTimeout(() => fn(...args), delay)
-      }
-    }
+    const input = screen.getByPlaceholderText('Enter name')
+    fireEvent.change(input, { target: { value: 'John Doe' } })
     
-    const debouncedCallback = debounce(callback, 300)
-    
-    // Call multiple times quickly
-    debouncedCallback('test1')
-    debouncedCallback('test2')
-    debouncedCallback('test3')
-    
-    // Should not have been called yet
-    expect(callback).not.toHaveBeenCalled()
-    
-    // Advance time
-    vi.advanceTimersByTime(300)
-    
-    // Should have been called only once with the last value
-    expect(callback).toHaveBeenCalledTimes(1)
-    expect(callback).toHaveBeenCalledWith('test3')
-    
-    vi.useRealTimers()
+    expect(input).toHaveValue('John Doe')
   })
 })

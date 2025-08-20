@@ -1,127 +1,125 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '../test-utils'
-import { HeroSection } from '@/components/HeroSection'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { render, screen } from '../test-utils'
+import { cleanup } from '@testing-library/react'
+import HeroSection from '@/components/HeroSection'
 
-// Mock the AnimatedCanvas component
-vi.mock('@/components/AnimatedCanvas', () => ({
-  AnimatedCanvas: () => <div data-testid="animated-canvas">Animated Canvas</div>
-}))
-
-// Mock the hero image
-vi.mock('@/assets/hero-festival.jpg', () => ({
-  default: 'mocked-hero-image.jpg'
-}))
-
-// Mock scrollIntoView
-const mockScrollIntoView = vi.fn()
-Object.defineProperty(Element.prototype, 'scrollIntoView', {
-  value: mockScrollIntoView,
-  writable: true
+// Mocks
+vi.mock('framer-motion', async () => {
+  const actual = await vi.importActual<any>('framer-motion')
+  return {
+    ...actual,
+    useReducedMotion: vi.fn(() => false)
+  }
 })
 
-describe('HeroSection', () => {
+vi.mock('@/utils/performance', () => {
+  return {
+    useVideoOffscreen: vi.fn(),
+    useDevicePerformance: vi.fn(() => ({ isLowEnd: false }))
+  }
+})
+
+// Helpers to get mocked fns with typing
+import { useReducedMotion } from 'framer-motion'
+import { useVideoOffscreen, useDevicePerformance } from '@/utils/performance'
+
+describe('HeroSection (vídeos e performance)', () => {
   beforeEach(() => {
+    // Isolar DOM entre testes, pois o projeto desativa o cleanup automático
+    cleanup()
     vi.clearAllMocks()
-    // Mock getElementById
-    const mockElement = { scrollIntoView: mockScrollIntoView }
-    vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as any)
+    ;(useReducedMotion as unknown as Mock).mockReturnValue(false)
+    ;(useDevicePerformance as unknown as Mock).mockReturnValue({ isLowEnd: false })
   })
 
-  it('should render the main title and year', () => {
-    render(<HeroSection />)
-    
-    expect(screen.getByText('Festival de Rock')).toBeInTheDocument()
-    expect(screen.getByText('2025')).toBeInTheDocument()
+  it('deve renderizar os dois elementos de vídeo (fundo e principal)', () => {
+    const { container } = render(<HeroSection />)
+
+    // Vídeo principal identificado por aria-label/título
+    const mainVideo = screen.getByLabelText('Vídeo do lineup do Estação Rock 2025')
+    expect(mainVideo).toBeInTheDocument()
+    expect(mainVideo).toHaveAttribute('title', 'Lineup Estação Rock 2025')
+
+    // Deve haver 2 <video> no total: fundo + principal
+    const videos = container.querySelectorAll('video')
+    expect(videos.length).toBe(2)
   })
 
-  it('should render the subtitle with event description', () => {
-    render(<HeroSection />)
-    
-    expect(screen.getByText(/A experiência musical mais intensa do ano está chegando/)).toBeInTheDocument()
-    expect(screen.getByText(/Prepare-se para três dias de puro rock e energia!/)).toBeInTheDocument()
-  })
+  it('deve configurar autoplay/loop/muted corretamente quando não há preferência de redução de movimento e device não é low-end', () => {
+    const { container } = render(<HeroSection />)
 
-  it('should display festival stats', () => {
-    render(<HeroSection />)
-    
-    expect(screen.getByText('20+ Bandas')).toBeInTheDocument()
-    expect(screen.getByText('3 Palcos')).toBeInTheDocument()
-    expect(screen.getByText('50mil+ Pessoas')).toBeInTheDocument()
-  })
+    const videos = Array.from(container.querySelectorAll('video'))
+    expect(videos.length).toBe(2)
 
-  it('should render CTA buttons', () => {
-    render(<HeroSection />)
-    
-    expect(screen.getByText('Entrar na Experiência')).toBeInTheDocument()
-    expect(screen.getByText('Ver Programação')).toBeInTheDocument()
-  })
-
-  it('should display event date and location', () => {
-    render(<HeroSection />)
-    
-    expect(screen.getByText('15, 16 e 17 de Agosto')).toBeInTheDocument()
-    expect(screen.getByText('São Paulo • Brasil')).toBeInTheDocument()
-  })
-
-  it('should render the animated canvas background', () => {
-    render(<HeroSection />)
-    
-    expect(screen.getByTestId('animated-canvas')).toBeInTheDocument()
-  })
-
-  it('should render the hero background image', () => {
-    render(<HeroSection />)
-    
-    const heroImg = screen.getByAltText('Festival de Rock 2025')
-    expect(heroImg).toBeInTheDocument()
-    expect(heroImg).toHaveAttribute('src', 'mocked-hero-image.jpg')
-  })
-
-  it('should scroll to lineup section when "Entrar na Experiência" button is clicked', () => {
-    render(<HeroSection />)
-    
-    const experienceButton = screen.getByText('Entrar na Experiência')
-    fireEvent.click(experienceButton)
-    
-    expect(document.getElementById).toHaveBeenCalledWith('lineup')
-    expect(mockScrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' })
-  })
-
-  it('should scroll to programacao section when "Ver Programação" button is clicked', () => {
-    render(<HeroSection />)
-    
-    const programacaoButton = screen.getByText('Ver Programação')
-    fireEvent.click(programacaoButton)
-    
-    expect(document.getElementById).toHaveBeenCalledWith('programacao')
-    expect(mockScrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' })
-  })
-
-  it('should render scroll indicator', () => {
-    render(<HeroSection />)
-    
-    expect(screen.getByText('Explore')).toBeInTheDocument()
-  })
-
-  it('should have proper accessibility attributes', () => {
-    render(<HeroSection />)
-    
-    const heroImg = screen.getByAltText('Festival de Rock 2025')
-    expect(heroImg).toHaveAttribute('alt', 'Festival de Rock 2025')
-    
-    // Check if buttons are properly accessible
-    const buttons = screen.getAllByRole('button')
-    expect(buttons).toHaveLength(2)
-    buttons.forEach(button => {
-      expect(button).toBeVisible()
+    // Ambos os vídeos devem estar com autoplay e loop ativos; o principal também é muted
+    // Boolean attributes aparecem como atributo presente (string vazia) em JSDOM
+    videos.forEach((v) => {
+      expect(v).toHaveAttribute('autoplay')
+      expect(v).toHaveAttribute('loop')
+      expect(v).toHaveAttribute('playsinline')
     })
+
+    const mainVideo = screen.getByLabelText('Vídeo do lineup do Estação Rock 2025') as HTMLVideoElement
+    // Verificar via propriedade booleana para maior robustez em JSDOM
+    expect(mainVideo.muted).toBe(true)
+    expect(mainVideo.getAttribute('poster')).toBe('/station.png')
+
+    // Fonte do vídeo principal
+    const source = mainVideo.querySelector('source')
+    expect(source).toBeTruthy()
+    expect(source?.getAttribute('src')).toBe('/video/LINEUP2.mp4')
+    expect(source?.getAttribute('type')).toBe('video/mp4')
   })
 
-  it('should apply loading animation classes', () => {
+  it('deve desativar autoplay e loop quando useReducedMotion retornar true', () => {
+    ;(useReducedMotion as unknown as Mock).mockReturnValue(true)
+
+    const { container } = render(<HeroSection />)
+    const mainVideo = screen.getByLabelText('Vídeo do lineup do Estação Rock 2025')
+
+    // Com reduced motion, autoplay/loop não devem estar presentes no principal
+    expect(mainVideo).not.toHaveAttribute('autoplay')
+    expect(mainVideo).not.toHaveAttribute('loop')
+
+    // E controles devem estar visíveis (controls presente)
+    expect(mainVideo).toHaveAttribute('controls')
+
+    // O de fundo também não deve ter autoplay/loop
+    const videos = Array.from(container.querySelectorAll('video')).filter(v => v !== mainVideo)
+    const bgVideo = videos[0]
+    expect(bgVideo).not.toHaveAttribute('autoplay')
+    expect(bgVideo).not.toHaveAttribute('loop')
+  })
+
+  it('deve habilitar controles quando o device for low-end', () => {
+    ;(useDevicePerformance as unknown as Mock).mockReturnValue({ isLowEnd: true })
+
     render(<HeroSection />)
-    
-    // The component should have loaded state applied
-    const mainContent = screen.getByText('Festival de Rock').closest('div')
-    expect(mainContent).toHaveClass('opacity-100', 'translate-y-0')
+
+    const mainVideo = screen.getByLabelText('Vídeo do lineup do Estação Rock 2025')
+    expect(mainVideo).toHaveAttribute('controls')
+  })
+
+  it('deve invocar useVideoOffscreen para ambos os vídeos com opções corretas', () => {
+    const spy = useVideoOffscreen as unknown as Mock
+
+    render(<HeroSection />)
+
+    // Duas invocações: fundo (rootMargin 100px) e principal (rootMargin 50px)
+    expect(spy).toHaveBeenCalledTimes(2)
+
+    const margins = (spy as any).mock.calls.map(([, options]: any[]) => options?.rootMargin)
+    expect(margins).toContain('100px')
+    expect(margins).toContain('50px')
+
+    const flags = (spy as any).mock.calls.map(([, options]: any[]) => ({
+      pauseWhenOffscreen: options?.pauseWhenOffscreen,
+      resumeWhenVisible: options?.resumeWhenVisible,
+    }))
+
+    flags.forEach((f: any) => {
+      expect(f.pauseWhenOffscreen).toBe(true)
+      expect(f.resumeWhenVisible).toBe(true)
+    })
   })
 })

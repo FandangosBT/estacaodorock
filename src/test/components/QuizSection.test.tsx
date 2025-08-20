@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '../test-utils'
+import { cleanup as cleanupPure } from '@testing-library/react/pure'
+import userEvent from '@testing-library/user-event'
 import { QuizSection } from '@/components/QuizSection'
 
 // Mock sonner toast
@@ -7,83 +9,129 @@ vi.mock('sonner', () => ({
   toast: vi.fn()
 }))
 
-// Mock window.open
-const mockWindowOpen = vi.fn()
-Object.defineProperty(window, 'open', {
-  value: mockWindowOpen,
-  writable: true
-})
+let mockShare: ReturnType<typeof vi.fn>
+let mockWriteText: ReturnType<typeof vi.fn>
 
-// Mock navigator.share and navigator.clipboard
-const mockShare = vi.fn()
-const mockWriteText = vi.fn()
-Object.defineProperty(navigator, 'share', {
-  value: mockShare,
-  writable: true
-})
-Object.defineProperty(navigator, 'clipboard', {
-  value: { writeText: mockWriteText },
-  writable: true
-})
+// Helper: clica no último botão que corresponde ao nome (lida com duplicatas de transição)
+async function clickLastByRoleName(user: ReturnType<typeof userEvent.setup>, name: RegExp) {
+  await waitFor(() => {
+    const matches = screen.getAllByRole('button', { name })
+    expect(matches.length).toBeGreaterThan(0)
+  })
+  const matches = screen.getAllByRole('button', { name })
+  await user.click(matches[matches.length - 1])
+}
+
+// Espera utilitária para transições
+const waitMs = (ms: number) => new Promise(res => setTimeout(res, ms))
+
+// Helper para completar o quiz até o resultado "CLÁSSICO ATEMPORAL"
+async function completeClassicResultFlow(user: ReturnType<typeof userEvent.setup>) {
+  // Padrões para clicar sempre na opção CLÁSSICA de cada pergunta
+  const classicOptionPatterns: RegExp[] = [
+    /Fechei os olhos e cantei junto com o solo/i, // Q1 classic
+    /Freddie Mercury \(Queen\)/i, // Q2 classic
+    /Harmonia e composição melódica/i, // Q3 classic
+    /Ela precisa contar uma história em ordem/i, // Q4 classic
+    /Uma arte de composição e performance/i, // Q5 classic
+    /Banda com arranjos épicos e performance vocal intensa/i, // Q6 classic
+    /Num toca-discos analógico com capa na mão/i, // Q7 classic
+    /sabe que toda boa música é atemporal/i, // Q8 classic
+  ]
+
+  // Garantir que estamos prontos: a primeira opção clássica deve estar presente
+  await screen.findAllByRole('button', { name: classicOptionPatterns[0] }, { timeout: 7000 })
+
+  for (let i = 0; i < classicOptionPatterns.length; i++) {
+    // Clicar na opção clássica da pergunta i
+    await clickLastByRoleName(user, classicOptionPatterns[i])
+
+    // Dar tempo para a transição antes de buscar a próxima pergunta
+    await waitMs(350)
+
+    if (i < classicOptionPatterns.length - 1) {
+      // Aguardar que uma opção da próxima pergunta esteja disponível (a clássica da próxima)
+      await screen.findAllByRole('button', { name: classicOptionPatterns[i + 1] }, { timeout: 7000 })
+    }
+  }
+
+  // Aguardar que a tela de resultado esteja pronta (botão SHARE presente)
+  await screen.findByRole('button', { name: 'SHARE' }, { timeout: 15000 })
+
+  // E então validar o título do resultado
+  await screen.findByText('CLÁSSICO ATEMPORAL', {}, { timeout: 15000 })
+}
 
 describe('QuizSection', () => {
+  let user: ReturnType<typeof userEvent.setup>
+
   beforeEach(() => {
     vi.clearAllMocks()
+    user = userEvent.setup()
+    
+    // Definir mocks de navegador por teste para evitar state bleed
+    mockShare = vi.fn()
+    mockWriteText = vi.fn()
+    Object.defineProperty(navigator, 'share', {
+      value: mockShare,
+      writable: true,
+      configurable: true,
+    })
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: mockWriteText },
+      writable: true,
+      configurable: true,
+    })
   })
 
-  it('should render the quiz title and description', () => {
-    render(<QuizSection />)
-    
-    expect(screen.getByText('Quiz Rock')).toBeInTheDocument()
-    expect(screen.getByText('Descubra que tipo de roqueiro você é e ganhe um cupom exclusivo!')).toBeInTheDocument()
+  afterEach(() => {
+    cleanupPure()
   })
 
   it('should render the first question', () => {
-    render(<QuizSection />)
+    const { getByText, getByRole } = render(<QuizSection />)
     
-    expect(screen.getByText('Qual é a sua banda de rock favorita?')).toBeInTheDocument()
-    expect(screen.getByText('🎸 Metallica')).toBeInTheDocument()
-    expect(screen.getByText('⚡ AC/DC')).toBeInTheDocument()
-    expect(screen.getByText('🔥 Foo Fighters')).toBeInTheDocument()
-    expect(screen.getByText('🎭 My Chemical Romance')).toBeInTheDocument()
+    expect(getByText('Qual frase mais representa seu estado de espírito em um show?')).toBeInTheDocument()
+    expect(getByRole('button', { name: /Perdi a noção do tempo/i })).toBeInTheDocument()
+    expect(getByRole('button', { name: /Entrei no pogo/i })).toBeInTheDocument()
+    expect(getByRole('button', { name: /O grave bateu no peito/i })).toBeInTheDocument()
+    expect(getByRole('button', { name: /Fechei os olhos e cantei/i })).toBeInTheDocument()
   })
 
   it('should show progress bar with correct initial values', () => {
-    render(<QuizSection />)
+    const { getByText } = render(<QuizSection />)
     
-    expect(screen.getByText('1/4')).toBeInTheDocument()
-    expect(screen.getByText('Progresso')).toBeInTheDocument()
+    expect(getByText('1/8')).toBeInTheDocument()
+    expect(getByText('PROGRESSO')).toBeInTheDocument()
   })
 
   it('should advance to next question when an option is selected', async () => {
     render(<QuizSection />)
     
     // Click on first option
-    fireEvent.click(screen.getByText('🎸 Metallica'))
+    await clickLastByRoleName(user, /Perdi a noção do tempo/i)
     
     // Wait for animation and state update
     await waitFor(() => {
-      expect(screen.getByText('Como você curte um show de rock?')).toBeInTheDocument()
+      expect(screen.getByText('Com quem você teria uma conversa de bar?')).toBeInTheDocument()
     })
     
     // Progress should update
-    expect(screen.getByText('2/4')).toBeInTheDocument()
+    expect(screen.getByText('2/8')).toBeInTheDocument()
   })
 
   it('should show question indicators and update them correctly', async () => {
-    render(<QuizSection />)
+    const { container } = render(<QuizSection />)
     
-    // Initially, first indicator should be active
-    const indicators = screen.getAllByRole('generic').filter(el => 
-      el.className.includes('w-3 h-3 rounded-full')
-    )
-    expect(indicators).toHaveLength(4)
+    // Initially, indicators equals questions length
+    const indicators = container.querySelectorAll('.tape-indicator')
+    expect(indicators).toHaveLength(8)
     
     // Answer first question
-    fireEvent.click(screen.getByText('🎸 Metallica'))
+    await clickLastByRoleName(user, /Perdi a noção do tempo/i)
     
     await waitFor(() => {
-      expect(screen.getByText('Como você curte um show de rock?')).toBeInTheDocument()
+      expect(screen.getByText('Com quem você teria uma conversa de bar?')).toBeInTheDocument()
     })
   })
 
@@ -91,221 +139,133 @@ describe('QuizSection', () => {
     const { toast } = await import('sonner')
     render(<QuizSection />)
     
-    // Answer all questions to get "classic" result
-    fireEvent.click(screen.getByText('🎸 Metallica'))
-    
-    await waitFor(() => {
-      expect(screen.getByText('Como você curte um show de rock?')).toBeInTheDocument()
-    })
-    
-    fireEvent.click(screen.getByText('🍺 Relaxando com uma cerveja'))
-    
-    await waitFor(() => {
-      expect(screen.getByText('Qual instrumento te representa?')).toBeInTheDocument()
-    })
-    
-    fireEvent.click(screen.getByText('🎸 Guitarra elétrica'))
-    
-    await waitFor(() => {
-      expect(screen.getByText('Seu estilo de rock preferido:')).toBeInTheDocument()
-    })
-    
-    fireEvent.click(screen.getByText('🌟 Rock Clássico'))
+    // Answer all questions to get a deterministic result (classic)
+    await clickLastByRoleName(user, /Fechei os olhos e cantei junto com o solo/i)
+    await waitMs(350)
+    await clickLastByRoleName(user, /Freddie Mercury \(Queen\)/i)
+    await waitMs(350)
+    await clickLastByRoleName(user, /Harmonia e composição melódica/i)
+    await waitMs(350)
+    await clickLastByRoleName(user, /Ela precisa contar uma história em ordem/i)
+    await waitMs(350)
+    await clickLastByRoleName(user, /Uma arte de composição e performance/i)
+    await waitMs(350)
+    await clickLastByRoleName(user, /Banda com arranjos épicos e performance vocal intensa/i)
+    await waitMs(350)
+    await clickLastByRoleName(user, /Num toca-discos analógico com capa na mão/i)
+    await waitMs(350)
+    await clickLastByRoleName(user, /sabe que toda boa música é atemporal/i)
     
     // Should show result
-    await waitFor(() => {
-      expect(screen.getByText('Roqueiro Clássico')).toBeInTheDocument()
-    })
+    await screen.findByRole('button', { name: 'SHARE' }, { timeout: 15000 })
+    expect(screen.getByText('CLÁSSICO ATEMPORAL')).toBeInTheDocument()
     
     expect(toast).toHaveBeenCalledWith('Quiz concluído! 🎉', {
-      description: 'Descubra que tipo de roqueiro você é!'
+      description: 'Descubra seu arquétipo roqueiro no festival',
     })
-  })
 
-  it('should show correct result based on answers', async () => {
-    render(<QuizSection />)
-    
-    // Answer questions to get "hardcore" result
-    fireEvent.click(screen.getByText('🎸 Metallica'))
-    
-    await waitFor(() => {
-      fireEvent.click(screen.getByText('🤘 Na primeira fileira gritando'))
-    })
-    
-    await waitFor(() => {
-      fireEvent.click(screen.getByText('🥁 Bateria'))
-    })
-    
-    await waitFor(() => {
-      fireEvent.click(screen.getByText('⚫ Heavy Metal'))
-    })
-    
-    await waitFor(() => {
-      expect(screen.getByText('Roqueiro Clássico')).toBeInTheDocument()
-      expect(screen.getByText('🎸')).toBeInTheDocument()
-      expect(screen.getByText('CLASSIC20')).toBeInTheDocument()
-    })
+    // sanity: result action buttons visíveis
+    expect(screen.getByRole('button', { name: 'SHARE' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'REFAZER' })).toBeInTheDocument()
   })
 
   it('should display result traits correctly', async () => {
     render(<QuizSection />)
     
     // Complete quiz to get classic result
-    fireEvent.click(screen.getByText('🎸 Metallica'))
-    await waitFor(() => fireEvent.click(screen.getByText('🍺 Relaxando com uma cerveja')))
-    await waitFor(() => fireEvent.click(screen.getByText('🎸 Guitarra elétrica')))
-    await waitFor(() => fireEvent.click(screen.getByText('🌟 Rock Clássico')))
+    await completeClassicResultFlow(user)
     
     await waitFor(() => {
-      expect(screen.getByText('Nostálgico')).toBeInTheDocument()
-      expect(screen.getByText('Autêntico')).toBeInTheDocument()
+      expect(screen.getByText('Clássico')).toBeInTheDocument()
+      expect(screen.getByText('Sábio')).toBeInTheDocument()
+      expect(screen.getByText('Atemporal')).toBeInTheDocument()
       expect(screen.getByText('Tradicionalista')).toBeInTheDocument()
-      expect(screen.getByText('Apaixonado por história')).toBeInTheDocument()
     })
-  })
-
-  it('should show coupon section in result', async () => {
-    render(<QuizSection />)
-    
-    // Complete quiz
-    fireEvent.click(screen.getByText('🎸 Metallica'))
-    await waitFor(() => fireEvent.click(screen.getByText('🍺 Relaxando com uma cerveja')))
-    await waitFor(() => fireEvent.click(screen.getByText('🎸 Guitarra elétrica')))
-    await waitFor(() => fireEvent.click(screen.getByText('🌟 Rock Clássico')))
-    
-    await waitFor(() => {
-      expect(screen.getByText('🎫 Seu Cupom Exclusivo')).toBeInTheDocument()
-      expect(screen.getByText('CLASSIC20')).toBeInTheDocument()
-      expect(screen.getByText('Use este cupom para ganhar desconto nos ingressos!')).toBeInTheDocument()
-    })
-  })
-
-  it('should open WhatsApp when redeem coupon button is clicked', async () => {
-    const { toast } = await import('sonner')
-    render(<QuizSection />)
-    
-    // Complete quiz
-    fireEvent.click(screen.getByText('🎸 Metallica'))
-    await waitFor(() => fireEvent.click(screen.getByText('🍺 Relaxando com uma cerveja')))
-    await waitFor(() => fireEvent.click(screen.getByText('🎸 Guitarra elétrica')))
-    await waitFor(() => fireEvent.click(screen.getByText('🌟 Rock Clássico')))
-    
-    await waitFor(() => {
-      const redeemButton = screen.getByText('Resgatar no WhatsApp')
-      fireEvent.click(redeemButton)
-    })
-    
-    expect(mockWindowOpen).toHaveBeenCalledWith(
-      expect.stringContaining('https://wa.me/?text='),
-      '_blank'
-    )
-    
-    expect(toast).toHaveBeenCalledWith('Cupom enviado para WhatsApp! 🎫', {
-      description: 'Resgate seu desconto agora mesmo'
-    })
-  })
+  }, 15000)
 
   it('should share result when share button is clicked', async () => {
     render(<QuizSection />)
     
-    // Complete quiz
-    fireEvent.click(screen.getByText('🎸 Metallica'))
-    await waitFor(() => fireEvent.click(screen.getByText('🍺 Relaxando com uma cerveja')))
-    await waitFor(() => fireEvent.click(screen.getByText('🎸 Guitarra elétrica')))
-    await waitFor(() => fireEvent.click(screen.getByText('🌟 Rock Clássico')))
+    // Completar quiz para obter resultado clássico
+    await completeClassicResultFlow(user)
     
-    await waitFor(() => {
-      const shareButton = screen.getByText('Compartilhar Resultado')
-      fireEvent.click(shareButton)
-    })
+    const shareButton = await screen.findByRole('button', { name: 'SHARE' })
+    await user.click(shareButton)
     
     expect(mockShare).toHaveBeenCalledWith({
       title: 'Meu Resultado - Festival de Rock 2025',
-      text: expect.stringContaining('Descobri que sou um Roqueiro Clássico!'),
+      text: expect.stringContaining('Descobri que sou um CLÁSSICO ATEMPORAL!'),
       url: window.location.href
     })
-  })
+  }, 15000)
 
   it('should copy to clipboard when navigator.share is not available', async () => {
     const { toast } = await import('sonner')
-    // Temporarily remove navigator.share
-    const originalShare = navigator.share
+    // Temporariamente remove navigator.share
+    const originalShare = navigator.share as any
     Object.defineProperty(navigator, 'share', {
       value: undefined,
-      writable: true
+      writable: true,
+      configurable: true,
     })
     
     render(<QuizSection />)
     
-    // Complete quiz
-    fireEvent.click(screen.getByText('🎸 Metallica'))
-    await waitFor(() => fireEvent.click(screen.getByText('🍺 Relaxando com uma cerveja')))
-    await waitFor(() => fireEvent.click(screen.getByText('🎸 Guitarra elétrica')))
-    await waitFor(() => fireEvent.click(screen.getByText('🌟 Rock Clássico')))
+    // Completar quiz para obter clássico
+    await completeClassicResultFlow(user)
     
-    await waitFor(() => {
-      const shareButton = screen.getByText('Compartilhar Resultado')
-      fireEvent.click(shareButton)
-    })
+    const shareButton = await screen.findByRole('button', { name: 'SHARE' })
+    await user.click(shareButton)
     
     expect(mockWriteText).toHaveBeenCalledWith(
-      expect.stringContaining('Descobri que sou um Roqueiro Clássico!')
+      expect.stringContaining('Descobri que sou um CLÁSSICO ATEMPORAL!')
     )
     
     expect(toast).toHaveBeenCalledWith('Resultado copiado!', {
       description: 'Cole onde quiser para compartilhar'
     })
     
-    // Restore navigator.share
-    navigator.share = originalShare
-  })
+    // Restaurar navigator.share
+    Object.defineProperty(navigator, 'share', { value: originalShare, writable: true, configurable: true })
+  }, 15000)
 
-  it('should reset quiz when "Fazer Novamente" button is clicked', async () => {
+  it('should reset quiz when "REFAZER" button is clicked', async () => {
     render(<QuizSection />)
     
-    // Complete quiz
-    fireEvent.click(screen.getByText('🎸 Metallica'))
-    await waitFor(() => fireEvent.click(screen.getByText('🍺 Relaxando com uma cerveja')))
-    await waitFor(() => fireEvent.click(screen.getByText('🎸 Guitarra elétrica')))
-    await waitFor(() => fireEvent.click(screen.getByText('🌟 Rock Clássico')))
+    // Completar quiz até o resultado
+    await completeClassicResultFlow(user)
+    
+    // Clicar em refazer e aguardar retornar à primeira pergunta
+    const resetButton = screen.getByRole('button', { name: 'REFAZER' })
+    await user.click(resetButton)
     
     await waitFor(() => {
-      const resetButton = screen.getByText('Fazer Novamente')
-      fireEvent.click(resetButton)
+      expect(screen.getByText('Qual frase mais representa seu estado de espírito em um show?')).toBeInTheDocument()
+      expect(screen.getByText('1/8')).toBeInTheDocument()
     })
-    
-    // Should be back to first question
-    expect(screen.getByText('Qual é a sua banda de rock favorita?')).toBeInTheDocument()
-    expect(screen.getByText('1/4')).toBeInTheDocument()
-  })
+  }, 15000)
 
   it('should render 5 stars in the result', async () => {
-    render(<QuizSection />)
+    const { container } = render(<QuizSection />)
     
-    // Complete quiz
-    fireEvent.click(screen.getByText('🎸 Metallica'))
-    await waitFor(() => fireEvent.click(screen.getByText('🍺 Relaxando com uma cerveja')))
-    await waitFor(() => fireEvent.click(screen.getByText('🎸 Guitarra elétrica')))
-    await waitFor(() => fireEvent.click(screen.getByText('🌟 Rock Clássico')))
+    // Completar quiz até o resultado
+    await completeClassicResultFlow(user)
     
     await waitFor(() => {
-      // Should have 5 star icons
-      const stars = document.querySelectorAll('.lucide-star')
+      // Deve possuir 5 ícones de estrela com classe Lucide
+      const stars = container.querySelectorAll('svg[class*="lucide-star"]')
       expect(stars).toHaveLength(5)
     })
-  })
+  }, 15000)
 
   it('should show correct result description', async () => {
     render(<QuizSection />)
     
-    // Complete quiz
-    fireEvent.click(screen.getByText('🎸 Metallica'))
-    await waitFor(() => fireEvent.click(screen.getByText('🍺 Relaxando com uma cerveja')))
-    await waitFor(() => fireEvent.click(screen.getByText('🎸 Guitarra elétrica')))
-    await waitFor(() => fireEvent.click(screen.getByText('🌟 Rock Clássico')))
+    // Completar quiz até o resultado
+    await completeClassicResultFlow(user)
     
     await waitFor(() => {
-      expect(screen.getByText(/Você é um verdadeiro conhecedor dos clássicos!/)).toBeInTheDocument()
+      expect(screen.getByText(/Você é guardião da essência do rock!/)).toBeInTheDocument()
     })
-  })
+  }, 15000)
 })

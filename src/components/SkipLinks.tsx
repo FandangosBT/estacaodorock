@@ -8,8 +8,8 @@ interface SkipLink {
 
 const skipLinks: SkipLink[] = [
   { href: '#main-content', label: 'Pular para o conteúdo principal' },
-  { href: '#lineup', label: 'Pular para o lineup' },
-  { href: '#programacao', label: 'Pular para a programação' },
+  // { href: '#lineup', label: 'Pular para o lineup' },
+  // { href: '#programacao', label: 'Pular para a programação' },
   { href: '#galeria', label: 'Pular para a galeria' },
   { href: '#quiz', label: 'Pular para o quiz' },
 ]
