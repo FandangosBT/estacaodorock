@@ -188,8 +188,9 @@ Paleta de cores sombria e energética para festivais de rua.
 
   /* Força scroll em todos os elementos que precisam */
   #root {
-    height: 100%;
-    overflow-y: auto;
+    min-height: 100%;
+    overflow-y: visible;
+    overflow-x: hidden;
   }
 }
 

@@ -56,17 +56,18 @@ export default function HeroSection() {
         <FloatingPanel>
           <video
             ref={mainVideoRef}
-            className="block w-full h-auto object-contain bg-transparent"
+            className="block w-full h-auto object-contain bg-transparent no-native-controls"
             autoPlay={mainAutoplay}
             loop={mainLoop}
             muted
-            controls={mainControls}
             playsInline
             preload="auto"
             poster="/station.png"
             aria-label="Vídeo do lineup do Estação Rock 2025"
             title="Lineup Estação Rock 2025"
             disablePictureInPicture
+            controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+            x-webkit-airplay="deny"
           >
             <source src="/video/LINEUP2.mp4" type="video/mp4" />
             Seu navegador não suporta vídeo HTML5.

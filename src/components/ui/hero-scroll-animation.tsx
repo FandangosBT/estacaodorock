@@ -112,39 +112,46 @@ const HeroScrollAnimation = forwardRef<HTMLElement, HeroScrollProps>(({ linkHref
     if (!footerRef.current) return;
 
     const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        const isVisible = entry.isIntersecting && entry.intersectionRatio >= 0.25;
+      ([entry]) => {
+        const isVisible = entry.isIntersecting; // menos restritivo para mobile
         setIsFooterVisible(isVisible);
-        
-        if (isVisible && !hasPlayed) {
+        if (isVisible) {
           setShowVideoSection(true);
         }
       },
-      { root: null, threshold: [0, 0.25, 0.5, 0.75, 1] }
+      { root: null, threshold: 0, rootMargin: '0px 0px 50% 0px' }
     );
 
     observer.observe(footerRef.current);
     return () => observer.disconnect();
-  }, [hasPlayed]);
+  }, []);
 
   const playVideo = useCallback(async () => {
     if (hasPlayed) return;
-    
     const video = videoRef.current;
     if (!video) return;
 
-    video.controls = false;
-    video.playsInline = true;
-    video.loop = false;
-    
     try {
-      // Autoplay é garantido quando o vídeo inicia sem som
+      // Garantir atributos e estado antes do play (Safari iOS)
+      video.controls = false;
+      video.loop = false;
+      video.playsInline = true;
       video.muted = true;
+      video.setAttribute('playsinline', '');
+      video.setAttribute('muted', '');
+      video.setAttribute('autoplay', '');
+      // Não chamar video.load() aqui para não reiniciar o buffer quando já há dados
       await video.play();
       setHasPlayed(true);
     } catch (e) {
-      console.log('Erro ao reproduzir vídeo:', e);
+      // Segunda tentativa após próximo frame (alguns navegadores precisam de um tick)
+      try {
+        await new Promise(requestAnimationFrame);
+        await video.play();
+        setHasPlayed(true);
+      } catch (err) {
+        console.log('Erro ao reproduzir vídeo:', err);
+      }
     }
   }, [hasPlayed]);
 
@@ -153,9 +160,34 @@ const HeroScrollAnimation = forwardRef<HTMLElement, HeroScrollProps>(({ linkHref
     if (showVideoSection && !hasPlayed) {
       const timer = setTimeout(() => {
         playVideo();
-      }, 500);
+      }, 100);
       return () => clearTimeout(timer);
     }
+  }, [showVideoSection, hasPlayed, playVideo]);
+
+  // Fallback: primeiro gesto do usuário (iOS pode exigir gesto em alguns cenários específicos)
+  useEffect(() => {
+    if (!showVideoSection || hasPlayed) return;
+    const handler = () => { void playVideo(); };
+    document.addEventListener('touchstart', handler, { once: true, passive: true });
+    document.addEventListener('pointerdown', handler, { once: true });
+    document.addEventListener('click', handler, { once: true });
+    return () => {
+      document.removeEventListener('touchstart', handler as any);
+      document.removeEventListener('pointerdown', handler as any);
+      document.removeEventListener('click', handler as any);
+    };
+  }, [showVideoSection, hasPlayed, playVideo]);
+
+  // Fallback: quando a aba volta a ficar visível
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible' && showVideoSection && !hasPlayed) {
+        void playVideo();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
   }, [showVideoSection, hasPlayed, playVideo]);
 
   // Handler para quando o vídeo termina - remove scroll lock
@@ -219,20 +251,33 @@ const HeroScrollAnimation = forwardRef<HTMLElement, HeroScrollProps>(({ linkHref
             
             {/* Container do vídeo em full-width */}
             <div className="w-full max-w-6xl mx-auto">
-              <div className="relative w-full aspect-video bg-black shadow-lg">
+              <div className="relative w-full pb-[56.25%] bg-black shadow-lg">
                 <video
                   ref={videoRef}
-                  src="/video/armagedon.mp4"
-                  preload="metadata"
+                  preload="auto"
                   playsInline
+                  // @ts-ignore: atributo legado necessário para iOS Safari inline
+                  webkit-playsinline
+                  // @ts-ignore: atributo para navegadores baseados em X5 (Android)
+                  x5-playsinline
                   muted
+                  autoPlay
+                  disableRemotePlayback
+                  poster="/banner2.png"
+                  onPlay={() => { if (!hasPlayed) setHasPlayed(true); }}
+                  onLoadedMetadata={() => { if (!hasPlayed) void playVideo(); }}
+                  onLoadedData={() => { if (!hasPlayed) void playVideo(); }}
+                  onCanPlay={() => { if (!hasPlayed) void playVideo(); }}
                   onEnded={handleVideoEnded}
                   onError={handleVideoError}
                   onAbort={handleVideoAbort}
                   onKeyDown={onVideoKeyDown}
-                  className="w-full h-full object-cover no-native-controls"
+                  className="absolute inset-0 w-full h-full object-cover no-native-controls"
                   aria-label="Vídeo Armagedon do Estação do Rock Festival"
-                />
+                  src="/video/armagedon.mp4"
+                >
+                  Seu navegador não suporta vídeo HTML5.
+                </video>
                 {/* Link overlay clicável sobre o vídeo (após iniciar) */}
                 {linkHref && (
                   <a

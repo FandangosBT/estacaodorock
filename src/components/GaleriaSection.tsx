@@ -309,7 +309,7 @@ useEffect(() => {
   const check = () => {
     const overflow = el.scrollHeight > el.clientHeight + 1;
     setHasOverflow(overflow);
-    setIsBottom(el.scrollTop + el.clientHeight >= el.scrollHeight - 2);
+    setIsAtBottom(el.scrollTop + el.clientHeight >= el.scrollHeight - 2);
   };
   check();
   const ro = new ResizeObserver(() => check());
@@ -370,15 +370,14 @@ const handleCaptionScroll = () => {
 
   return (
     <motion.section id="galeria" aria-labelledby="galeria-title" className="bg-black py-20 px-6"
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.6, delay: 0.5 }}
+      initial={{ opacity: 1, y: 0 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
     >
       <div className="max-w-6xl mx-auto py-16 px-4">
         {/* Header */}
         <div className="text-center mb-16">
-          <h2 id="galeria-title" className="text-5xl lg:text-6xl font-bold uppercase tracking-wide text-[#f0f0f0] text-center drop-shadow-[0_0_4px_#ff2a2a] mb-4">
+          <h2 id="galeria-title" className="text-3xl md:text-4xl font-bold uppercase tracking-wide text-[#f0f0f0] text-center drop-shadow-[0_0_4px_#ff2a2a] mb-4">
             Um Pedaço da História
           </h2>
           <p className="text-center text-white/80 max-w-3xl mx-auto text-lg md:text-xl mb-10">
@@ -394,7 +393,7 @@ const handleCaptionScroll = () => {
               GALERIA INTERATIVA
             </h3>
             <p className="text-[#f0f0f0] text-center text-sm uppercase font-medium mb-8 opacity-80">
-              Passe o mouse sobre as imagens para navegar
+              Passe o mouse (desktop) ou toque/arraste (mobile) para navegar
             </p>
             <div className="flex justify-center">
               <HoverImageGallery 
@@ -419,6 +418,7 @@ const handleCaptionScroll = () => {
                   src={photo.image} 
                   alt={photo.caption}
                   className="w-full h-auto object-cover aspect-square"
+                  loading="lazy"
                 />
 
                 {/* Curtidas */}
@@ -466,7 +466,7 @@ const handleCaptionScroll = () => {
                 >
                   {/* Seta Esquerda - Posição Fixa */}
                   <button
-                    onClick={prevImage}
+                    onClick={(e) => { e.stopPropagation(); prevImage(); }}
                     className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-black/70 text-white hover:bg-black/90 transition-all duration-200 focus:ring-2 focus:ring-white/30 focus:outline-none shadow-lg"
                     aria-label="Imagem anterior (seta esquerda)"
                     style={{ minWidth: '44px', minHeight: '44px' }}
@@ -488,7 +488,7 @@ const handleCaptionScroll = () => {
 
                   {/* Seta Direita - Posição Fixa */}
                   <button
-                    onClick={nextImage}
+                    onClick={(e) => { e.stopPropagation(); nextImage(); }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-black/70 text-white hover:bg-black/90 transition-all duration-200 focus:ring-2 focus:ring-white/30 focus:outline-none shadow-lg"
                     aria-label="Próxima imagem (seta direita)"
                     style={{ minWidth: '44px', minHeight: '44px' }}

@@ -89,7 +89,7 @@ const Index = () => {
   );
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-x-hidden">
       {/* Background Video Galaxy */}
       <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden="true">
         <video

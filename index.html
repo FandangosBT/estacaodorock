@@ -30,6 +30,23 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@ramaldo_rock" />
     <meta name="twitter:image" content="https://estacaodorock.vercel.app/logo.svg" />
+
+    <!-- CSS crítico: esconder UI nativa de vídeo imediatamente para evitar flicker dos controles -->
+    <style id="critical-media-ui">
+      .no-native-controls::-webkit-media-controls-enclosure,
+      .no-native-controls::-webkit-media-controls-panel,
+      .no-native-controls::-webkit-media-controls {
+        display: none !important;
+      }
+      .no-native-controls::-moz-media-controls-enclosure,
+      .no-native-controls::-moz-media-controls-panel,
+      .no-native-controls::-moz-media-controls {
+        display: none !important;
+      }
+    </style>
+
+    <!-- Preload de mídia crítica do footer para acelerar exibição e autoplay -->
+    <link rel="preload" as="video" href="/video/armagedon.mp4" type="video/mp4" />
   </head>
 
   <body>

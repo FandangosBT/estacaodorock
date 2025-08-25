@@ -99,9 +99,9 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
                 repeatType: 'mirror',
               }
         }
-        className="w-full max-w-6xl mx-auto bg-black/10 backdrop-blur-sm rounded-2xl border border-white/15 shadow-[0_20px_80px_rgba(0,0,0,0.6)] overflow-hidden will-change-transform"
+        className="w-full max-w-6xl mx-auto bg-black/10 backdrop-blur-sm rounded-2xl border border-white/15 shadow-[0_20px_80px_rgba(0,0,0,0.6)] will-change-transform"
       >
-        <div className="p-6 md:p-8">
+        <div className="p-6 md:p-8 overflow-visible min-h-[2rem]">
           {children}
         </div>
       </motion.div>
