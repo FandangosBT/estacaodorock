@@ -8,7 +8,6 @@ import { useDevicePerformance } from '@/utils/performance';
 
 // Mock framer-motion para evitar timings de animação nos testes
 vi.mock('framer-motion', () => {
-  const React = require('react');
   return {
     AnimatePresence: ({ children }: any) => <>{children}</>,
     motion: new Proxy({}, {
@@ -61,8 +60,15 @@ describe('PageLoader', () => {
   it('deve ter o logo visível', () => {
     render(<PageLoader onFinish={vi.fn()} />);
     
-    const logo = screen.getByAltText('Logo');
-    expect(logo).toBeInTheDocument();
-    expect(logo).toHaveAttribute('src', '/logo.svg');
+    // O loader atual exibe um botão para ativar som com um ícone de play
+    const activateButton = screen.getByRole('button', { name: /Ativar som do vídeo/i });
+    expect(activateButton).toBeInTheDocument();
+
+    const iconImg = activateButton.querySelector('img') as HTMLImageElement | null;
+    expect(iconImg).not.toBeNull();
+    expect(iconImg?.getAttribute('src')).toBe('/icons/play.svg');
+    // Ícone é decorativo
+    expect(iconImg?.getAttribute('alt')).toBe('');
+    expect(iconImg?.getAttribute('aria-hidden')).toBe('true');
   });
 });

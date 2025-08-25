@@ -4,6 +4,7 @@ import { Heart, Camera, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { HoverImageGallery } from '@/components/ui/hover-image-gallery';
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 
 // Array limpo apenas com imagens existentes
 const muralImages = [
@@ -308,7 +309,7 @@ useEffect(() => {
   const check = () => {
     const overflow = el.scrollHeight > el.clientHeight + 1;
     setHasOverflow(overflow);
-    setIsAtBottom(el.scrollTop + el.clientHeight >= el.scrollHeight - 2);
+    setIsBottom(el.scrollTop + el.clientHeight >= el.scrollHeight - 2);
   };
   check();
   const ro = new ResizeObserver(() => check());
@@ -368,11 +369,16 @@ const handleCaptionScroll = () => {
   };
 
   return (
-    <section id="galeria" className="bg-black py-20 px-6">
+    <motion.section id="galeria" aria-labelledby="galeria-title" className="bg-black py-20 px-6"
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.6, delay: 0.5 }}
+    >
       <div className="max-w-6xl mx-auto py-16 px-4">
         {/* Header */}
         <div className="text-center mb-16">
-          <h2 className="text-5xl lg:text-6xl font-bold uppercase tracking-wide text-[#f0f0f0] text-center drop-shadow-[0_0_4px_#ff2a2a] mb-4">
+          <h2 id="galeria-title" className="text-5xl lg:text-6xl font-bold uppercase tracking-wide text-[#f0f0f0] text-center drop-shadow-[0_0_4px_#ff2a2a] mb-4">
             Um Pedaço da História
           </h2>
           <p className="text-center text-white/80 max-w-3xl mx-auto text-lg md:text-xl mb-10">
@@ -542,7 +548,7 @@ const handleCaptionScroll = () => {
           )}
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 

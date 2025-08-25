@@ -23,7 +23,7 @@ const MapSection: React.FC = () => {
       await navigator.clipboard.writeText(PLUS_CODE);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    } catch {}
+    } catch { /* noop */ }
   }, []);
 
   // Efeito float galáxico - mais amplo e orgânico
@@ -67,7 +67,12 @@ const MapSection: React.FC = () => {
   }, [enableAnimations]);
 
   return (
-    <section id="mapa" aria-labelledby="mapa-title" className="py-16 px-6">
+    <motion.section id="mapa" aria-labelledby="mapa-title" className="py-16 px-6"
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.6, delay: 0.5 }}
+    >
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 text-center">
           <h2 id="mapa-title" className="text-3xl md:text-4xl font-black uppercase tracking-wider text-white">
@@ -171,7 +176,7 @@ const MapSection: React.FC = () => {
           100% { background-position: -200% 0; }
         }
       `}</style>
-    </section>
+    </motion.section>
   );
 };
 

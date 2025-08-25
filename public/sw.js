@@ -14,8 +14,7 @@ const STATIC_ASSETS = [
 // URLs da API para cache dinâmico
 const API_URLS = [
   '/api/bands',
-  '/api/schedule',
-  '/api/quiz'
+  '/api/schedule'
 ];
 
 // Instalação do Service Worker

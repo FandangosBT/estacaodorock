@@ -7,25 +7,24 @@ import gsap from "gsap";
 
 const baseMessages = [
   "Aquecendo os motores...",
-  "O trem do rock está chegando...",
-  "Prepare-se para a viagem sonora!",
+  // Removida: "O trem do rock está chegando...",
+  "Prepare-se para uma viagem sonora!",
   "Quase lá...",
   "Você vai sentir o peso do rock!",
 ];
 
 export default function PageLoader({ onFinish, userGesture }: { onFinish: () => void; userGesture?: boolean }) {
   const { isLowEnd } = useDevicePerformance();
-  const { playSound, setAudioEnabled, audioEnabled, stopBackgroundMusic, stopAllSounds } = useAudio();
+  const { setAudioEnabled, audioEnabled, stopBackgroundMusic, playSound } = useAudio();
   const [showVideo, setShowVideo] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
   const [currentMessage, setCurrentMessage] = useState(0);
   const [videoReady, setVideoReady] = useState(false);
+  const [ctaVisible, setCtaVisible] = useState(true);
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const logoBtnRef = useRef<HTMLButtonElement | null>(null);
   const logoImgRef = useRef<HTMLImageElement | null>(null);
-  const shineRef = useRef<HTMLSpanElement | null>(null);
-  const whistleTimeoutRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
 
   // Evita re-execuções do agendamento de áudio em re-renders
@@ -55,7 +54,7 @@ export default function PageLoader({ onFinish, userGesture }: { onFinish: () => 
       window.clearTimeout(bgTimer);
       stopBackgroundMusic();
     };
-  }, [userGesture, audioEnabled, setAudioEnabled, stopBackgroundMusic]);
+  }, [userGesture, scheduledOnceRef, audioEnabled, setAudioEnabled, stopBackgroundMusic]);
 
   // Durações do loader (apenas o necessário)
   const durations = useMemo(() => {
@@ -74,13 +73,8 @@ export default function PageLoader({ onFinish, userGesture }: { onFinish: () => 
       clearTimeout(videoTimer);
       clearInterval(messageInterval);
       stopBackgroundMusic();
-      // Garantia de parar quaisquer efeitos sonoros em andamento ao desmontar
-      if (whistleTimeoutRef.current) {
-        window.clearTimeout(whistleTimeoutRef.current);
-      }
-      stopAllSounds();
     };
-  }, [durations.videoDelay, durations.messageInterval, stopBackgroundMusic, stopAllSounds]);
+  }, [durations.videoDelay, durations.messageInterval, stopBackgroundMusic]);
 
   // Sincroniza saída com o término real do vídeo
   const handleVideoEnded = useCallback(() => {
@@ -105,64 +99,68 @@ export default function PageLoader({ onFinish, userGesture }: { onFinish: () => 
     }, durations.fadeDuration);
   }, [durations.fadeDuration, onFinish, stopBackgroundMusic]);
 
-  // Easter Egg: clique na logo ativa áudio (gesto), toca apito por 2s e habilita som do vídeo do loader
+  // Botão de Play: habilita áudio, libera som do vídeo e toca apito
   const handleLogoActivate = useCallback(async () => {
     try {
+      // Esconde CTA com fade-out
+      setCtaVisible(false);
+
+      const whistleUrl = "/audio/train-whistle.MP3"; // Corrigido para corresponder ao arquivo em public
+
+      // Habilita áudio global se ainda não estiver ativo
       if (!audioEnabled) setAudioEnabled(true);
-      await playSound("/audio/train-whistle.MP3", { loop: false });
-      // Parar o apito após 2s (one-shot controlado)
-      whistleTimeoutRef.current = window.setTimeout(() => {
-        stopAllSounds();
-      }, 2000);
+
+      // Toca o efeito sonoro do apito; se acabou de habilitar o áudio,
+      // agenda para o próximo frame para garantir o estado atualizado
+      if (!audioEnabled) {
+        requestAnimationFrame(() => {
+          try {
+            playSound(whistleUrl, { volume: 1 });
+          } catch (err) {
+            console.warn("Falha ao tocar apito (raf):", err);
+          }
+        });
+      } else {
+        try {
+          await playSound(whistleUrl, { volume: 1 });
+        } catch (err) {
+          console.warn("Falha ao tocar apito:", err);
+        }
+      }
 
       if (videoRef.current) {
         videoRef.current.muted = false;
-        // Garantir reprodução com áudio após gesto
         try {
           await videoRef.current.play();
-        } catch {}
+        } catch { /* noop */ }
       }
 
-      // Feedback visual: brilho/shine + micro-scale, respeitando dispositivos low-end
-      if (logoImgRef.current) {
-        if (!isLowEnd) {
-          gsap.fromTo(
-            logoImgRef.current,
-            { filter: "drop-shadow(0 0 0 rgba(255,255,255,0)) brightness(1)" },
-            {
-              filter: "drop-shadow(0 0 18px rgba(255,255,255,0.95)) brightness(1.2)",
-              duration: 0.35,
-              yoyo: true,
-              repeat: 1,
-              ease: "power2.out",
-            }
-          );
-        } else {
-          // fallback mais leve
-          gsap.to(logoImgRef.current, { scale: 1.03, duration: 0.18, yoyo: true, repeat: 1, ease: "power2.out" });
-        }
-      }
-      if (logoBtnRef.current && !isLowEnd) {
-        gsap.fromTo(
-          logoBtnRef.current,
-          { scale: 1 },
-          { scale: 1.06, duration: 0.18, yoyo: true, repeat: 1, ease: "power2.out" }
-        );
-      }
-      if (shineRef.current && !isLowEnd) {
-        gsap.set(shineRef.current, { opacity: 0, x: "-150%" });
-        gsap.to(shineRef.current, {
-          opacity: 0.9,
-          x: "150%",
-          duration: 0.6,
-          ease: "power2.inOut",
-          onComplete: () => gsap.set(shineRef.current!, { opacity: 0 }),
-        });
+      // Zoom in/out no botão no clique
+      if (logoBtnRef.current) {
+        gsap.timeline({ defaults: { ease: "power2.out" } })
+          .to(logoBtnRef.current, { scale: 1.2, duration: 0.12 })
+          .to(logoBtnRef.current, { scale: 0.95, duration: 0.12 })
+          .to(logoBtnRef.current, { scale: 1.0, duration: 0.16 });
       }
     } catch (e) {
-      console.warn("Easter egg falhou:", e);
+      console.warn("Ativar som falhou:", e);
     }
-  }, [audioEnabled, setAudioEnabled, playSound, stopAllSounds, isLowEnd]);
+  }, [audioEnabled, setAudioEnabled, playSound]);
+
+  // Animação pulsante contínua no ícone Play (mais agressiva)
+  useEffect(() => {
+    if (!logoImgRef.current) return;
+    const target = logoImgRef.current;
+    const tween = gsap.to(target, {
+      scale: isLowEnd ? 1.08 : 1.14,
+      duration: isLowEnd ? 0.8 : 0.6,
+      repeat: -1,
+      yoyo: true,
+      ease: "power2.inOut",
+      transformOrigin: "50% 50%",
+    });
+    return () => { tween.kill(); };
+  }, [isLowEnd]);
 
   return (
     <AnimatePresence>
@@ -199,29 +197,36 @@ export default function PageLoader({ onFinish, userGesture }: { onFinish: () => 
 
           {/* Layer de loader */}
           <div className="relative z-10 flex flex-col items-center justify-center text-center">
-            <motion.button
+            <button
               ref={logoBtnRef}
               type="button"
               onClick={handleLogoActivate}
-              className="w-40 outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded relative"
-              initial={false}
-              animate={{ scale: [0.98, 1.04, 0.99, 1], opacity: 1 }}
-              transition={{
-                duration: isLowEnd ? 1.2 : 2,
-                repeat: Infinity,
-                repeatType: "mirror",
-              }}
-              aria-label="Easter egg: tocar apito por 2 segundos e liberar áudio do vídeo"
+              className="w-20 h-20 md:w-24 md:h-24 outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-full grid place-items-center bg-white/5 hover:bg-white/10 transition-colors"
+              aria-label="Ativar som do vídeo"
             >
-              <img ref={logoImgRef} src="/logo.svg" alt="Logo Estação do Rock" className="w-full h-auto" />
-              {/* Shine overlay */}
-              <span
-                ref={shineRef}
+              <img
+                ref={logoImgRef}
+                src="/icons/play.svg"
+                alt=""
                 aria-hidden="true"
-                className="pointer-events-none absolute -inset-y-6 -inset-x-10 bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 blur-md"
-                style={{ transform: "translateX(-150%) rotate(8deg)" }}
+                className="w-10 h-10 md:w-12 md:h-12"
               />
-            </motion.button>
+            </button>
+
+            {/* CTA visível com fade-out na remoção */}
+            <AnimatePresence>
+              {ctaVisible && (
+                <motion.span
+                  initial={{ opacity: 1, y: 0 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.25 }}
+                  className="mt-3 text-white font-semibold text-base tracking-wide"
+                >
+                  Solta o Som!
+                </motion.span>
+              )}
+            </AnimatePresence>
 
             <AnimatePresence mode="wait">
               <motion.p

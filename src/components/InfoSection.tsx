@@ -121,11 +121,12 @@ export const InfoSection = () => {
   ];
 
   return (
-    <section id="informacoes" className="bg-black py-16 relative">
+    <section id="informacoes" aria-labelledby="informacoes-title" className="bg-black py-16 relative">
       <div className="max-w-6xl mx-auto py-16 px-4 relative z-10">
         {/* Header - BRUTALIST STYLE */}
         <div className="text-center mb-16">
           <h2 
+            id="informacoes-title"
             ref={titleAnimation.ref}
             className={`text-4xl md:text-6xl font-black mb-6 uppercase text-white ${titleAnimation.getAnimationClasses()}`}
             style={{

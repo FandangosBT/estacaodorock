@@ -4,7 +4,6 @@ import HeroSection from '@/components/HeroSection';
 import { GaleriaSection } from '@/components/GaleriaSection';
 // import { InfoSection } from '@/components/InfoSection';
 // import { SponsorsSection } from '@/components/SponsorsSection';
-import { QuizSection } from '@/components/QuizSection';
 import { DemoHeroScroll } from '@/components/ui/hero-scroll-animation-demo';
 import { motion, useReducedMotion } from 'framer-motion';
 import { FloatingPanel } from '@/components/ui/FloatingPanel';
@@ -22,7 +21,6 @@ const Index = () => {
   const [modal, setModal] = useState<
     | null
     | 'mapa'
-    | 'quiz'
     | 'playlist'
     | 'mural'
     | 'quem'
@@ -190,7 +188,7 @@ const Index = () => {
                   <section id="sobre" aria-labelledby="sobre-title">
                     <h2
                       id="sobre-title"
-                      className="text-3xl md:text-4xl font-bold uppercase tracking-wider text-[#ff2a2a] drop-shadow-[4px_4px_0_#000] mb-4 font-queenrocker"
+                      className="text-3xl md:text-4xl font-bold uppercase tracking-wider text-[#ff2a2a] drop-shadow-[4px_4px_0_#000] mb-4"
                     >
                       Sobre
                     </h2>
@@ -304,11 +302,6 @@ const Index = () => {
 
         {/* Modais das seções */}
 
-        {modal === 'quiz' && (
-          <Modal title="Quiz">
-            <QuizSection />
-          </Modal>
-        )}
 
         {modal === 'playlist' && (
           <Modal title="Playlist">

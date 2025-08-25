@@ -11,6 +11,11 @@ export default function HeroSection() {
   const backgroundVideoRef = useRef<HTMLVideoElement>(null);
   const mainVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Flags para o vídeo principal, mantendo comportamento consistente com preferências/performance
+  const mainAutoplay = !prefersReducedMotion;
+  const mainLoop = !prefersReducedMotion;
+  const mainControls = prefersReducedMotion || isLowEnd;
+
   // Pause videos when offscreen for performance
   useVideoOffscreen(backgroundVideoRef, {
     rootMargin: '100px',
@@ -52,10 +57,10 @@ export default function HeroSection() {
           <video
             ref={mainVideoRef}
             className="block w-full h-auto object-contain bg-transparent"
-            autoPlay
-            loop
+            autoPlay={mainAutoplay}
+            loop={mainLoop}
             muted
-            controls={false}
+            controls={mainControls}
             playsInline
             preload="auto"
             poster="/station.png"

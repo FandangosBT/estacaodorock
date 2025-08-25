@@ -6,6 +6,7 @@ import { GrungeNoise } from '@/components/ui/grunge-noise';
 import { TapeElement, TapeCorner } from '@/components/ui/tape-element';
 import { Calendar, MapPin, Users, Music, Heart, Award, Skull, Zap, Volume2, Guitar } from 'lucide-react';
 import { useScrollAnimation, useTimelineAnimation } from '@/hooks/use-scroll-animations';
+import { motion } from 'framer-motion';
 
 export const AboutSection = () => {
   const stats = [
@@ -43,7 +44,15 @@ export const AboutSection = () => {
   const timelineAnimation = useTimelineAnimation(milestones.length);
 
   return (
-    <section id="sobre" className="py-20 bg-black relative overflow-hidden">
+    <motion.section
+      id="sobre"
+      aria-labelledby="sobre-title"
+      className="py-20 bg-black relative overflow-hidden"
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.6, delay: 0.5 }}
+    >
       {/* Grunge Background Effects */}
       <GrungeBackground 
         intensity={0.8}
@@ -322,7 +331,7 @@ export const AboutSection = () => {
           </div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useEffect, useState } from 'react'
 import { useFavoritesStore } from '../../stores'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'

@@ -1077,7 +1077,7 @@ Paleta de cores sombria e energética para festivais de rua.
   animation: link-flicker 2s linear 1;
 }
 
-/* === UTILITÁRIOS GRUNGE/STENCIL PARA QUIZ & PLAYLIST === */
+/* === UTILITÁRIOS GRUNGE/STENCIL PARA PLAYLIST === */
 @layer components {
   /* Fonte Queen Rocker utilitária */
   .font-queenrocker {

@@ -181,7 +181,7 @@ export const Navigation = () => {
       const prevTabIndex = element.getAttribute('tabindex');
       element.setAttribute('tabindex', '-1');
       setTimeout(() => {
-        try { element.focus({ preventScroll: true }); } catch {}
+        try { element.focus({ preventScroll: true }); } catch { /* noop */ }
         if (prevTabIndex === null) {
           // Remover apenas se não existia previamente
           element.removeAttribute('tabindex');

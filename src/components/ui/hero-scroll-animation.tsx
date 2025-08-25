@@ -1,4 +1,4 @@
-"use client";
+"use client"; // eslint-disable-line @typescript-eslint/no-unused-expressions
 
 import { useScroll, useTransform, motion, MotionValue, useReducedMotion } from 'framer-motion';
 import React, { useRef, forwardRef, useEffect, useState, useCallback } from 'react';
@@ -184,7 +184,11 @@ const HeroScrollAnimation = forwardRef<HTMLElement, HeroScrollProps>(({ linkHref
       e.preventDefault();
       const video = videoRef.current;
       if (video) {
-        video.paused ? playVideo() : video.pause();
+        if (video.paused) {
+          void playVideo();
+        } else {
+          video.pause();
+        }
       }
     }
   };

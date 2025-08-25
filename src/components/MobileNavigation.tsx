@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Home, Calendar, Users, Music, Gift } from 'lucide-react';
+import { Menu, X, Home, Calendar, Users, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useMobile } from '@/hooks/useMobile';
@@ -19,7 +19,6 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({ onNavigate }
     // { id: 'lineup', label: 'Line-up', icon: Music },
     { id: 'schedule', label: 'Programação', icon: Calendar },
     { id: 'artists', label: 'Artistas', icon: Users },
-    { id: 'quiz', label: 'Quiz', icon: Gift },
   ];
 
   const handleNavigation = (sectionId: string) => {

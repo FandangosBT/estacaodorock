@@ -78,7 +78,7 @@ export const SocialLinksSection: React.FC<SocialLinksSectionProps> = ({
               <div className="rounded-2xl border border-white/15 bg-transparent p-4 md:p-6">
                 <h1
                   id="contato-title"
-                  className="text-3xl md:text-4xl font-bold uppercase tracking-wider text-[#ff2a2a] font-queenrocker mb-2"
+                  className="text-3xl md:text-4xl font-bold uppercase tracking-wider text-[#ff2a2a] mb-2"
                 >
                   Fale Conosco
                 </h1>

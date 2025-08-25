@@ -26,7 +26,7 @@ const getBgColor = (variant: Variant) => {
     case 'red':
       return 'bg-red-600'
     case 'pink':
-      return 'bg-pink-300'
+      return 'bg-[#f19695]'
     case 'orange':
       return 'bg-orange-500'
     default:
@@ -118,11 +118,15 @@ export default function LineupPoster() {
   }, [])
 
   return (
-    <section
+    <motion.section
       id="lineup"
       ref={containerRef}
       aria-labelledby="lineup-poster-title"
       className="relative w-full flex flex-col items-center justify-center px-2 sm:px-4 py-6 sm:py-8 overflow-hidden"
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.6, delay: 0.5 }}
     >
       {/* Background Grunge Effects */}
       <div className="absolute inset-0 pointer-events-none">
@@ -159,20 +163,16 @@ export default function LineupPoster() {
         className="absolute bottom-4 left-2 z-10"
       />
 
-      <h2 id="lineup-poster-title" className="sr-only">
-        Lineup do Festival - Lista de Bandas e Horários
-      </h2>
 
+      
       {/* Visible Section Header */}
       <div className="relative z-20 text-center mb-6 sm:mb-8">
-        <h1
+        <h2
+          id="lineup-poster-title"
           className="text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase text-white tracking-wider"
           style={{ textShadow: '3px 3px 0px #ff2a2a, 6px 6px 10px rgba(255, 42, 42, 0.3)' }}
         >
           Line-up
-        </h1>
-        <h2 className="text-sm sm:text-base md:text-lg text-white/80 max-w-2xl mx-auto mt-2">
-          Prepare-se para um embarque sem volta no vagão do rock
         </h2>
       </div>
 
@@ -246,6 +246,6 @@ export default function LineupPoster() {
         rotation={-20}
         className="absolute bottom-2 right-2 z-10"
       />
-    </section>
+    </motion.section>
   )
 }

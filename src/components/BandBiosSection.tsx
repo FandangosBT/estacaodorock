@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { ChevronLeft, ChevronRight, Heart, Star, Instagram, ChevronDown, ChevronUp } from "lucide-react";
 import { gsap } from "gsap";
+import { motion } from 'framer-motion';
 
 // Arranjo de bios específico desta seção, reutilizando os nomes do LineupPoster
 // Imagens serão inseridas posteriormente (usaremos placeholder por ora)
@@ -215,8 +216,12 @@ export default function BandBiosSection() {
   };
 
   return (
-    <section
+    <motion.section
       id="artistas"
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.6, delay: 0.5 }}
       className="relative w-full overflow-hidden bg-black py-14"
       aria-roledescription="carousel"
       aria-label="Apresentações das bandas"
@@ -454,6 +459,6 @@ export default function BandBiosSection() {
           </div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }

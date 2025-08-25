@@ -11,7 +11,7 @@ const skipLinks: SkipLink[] = [
   // { href: '#lineup', label: 'Pular para o lineup' },
   // { href: '#programacao', label: 'Pular para a programação' },
   { href: '#galeria', label: 'Pular para a galeria' },
-  { href: '#quiz', label: 'Pular para o quiz' },
+  { href: '#interatividade', label: 'Pular para a interatividade' },
 ]
 
 export function SkipLinks() {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Crown, Music, Users, Zap, Heart, Handshake, Star, Award, Building, Headphones } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const SponsorsSection = () => {
   const sponsorTiers = [
@@ -61,10 +62,15 @@ export const SponsorsSection = () => {
   ];
 
   return (
-    <section id="apoiadores" className="bg-black py-20 px-6">
+    <motion.section id="apoiadores" aria-labelledby="apoiadores-title" className="bg-black py-20 px-6"
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.6, delay: 0.5 }}
+    >
       <div className="max-w-6xl mx-auto py-16 px-4">
         <div className="text-center mb-12">
-          <h2 className="text-4xl lg:text-5xl font-bold uppercase tracking-wider text-white mb-4" style={{textShadow: '2px 2px #ff2a2a'}}>
+          <h2 id="apoiadores-title" className="text-4xl lg:text-5xl font-bold uppercase tracking-wider text-white mb-4" style={{textShadow: '2px 2px #ff2a2a'}}>
             Parceiros do Festival
           </h2>
           <p className="text-[#f0f0f0] text-lg max-w-3xl mx-auto">
@@ -165,7 +171,7 @@ export const SponsorsSection = () => {
           </div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 

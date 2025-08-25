@@ -100,18 +100,6 @@
           "sizes": "96x96"
         }
       ]
-    },
-    {
-      "name": "Quiz",
-      "short_name": "Quiz",
-      "description": "Descubra seu estilo musical",
-      "url": "/#quiz",
-      "icons": [
-        {
-          "src": "/icons/icon-96x96.png",
-          "sizes": "96x96"
-        }
-      ]
     }
   ],
   "related_applications": [],

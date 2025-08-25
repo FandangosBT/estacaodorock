@@ -110,7 +110,7 @@ export function AudioProvider({ children }: AudioProviderProps) {
       try {
         audio.pause()
         audio.currentTime = 0
-      } catch {}
+      } catch { /* noop */ }
     })
     soundEffectsRef.current = []
   }, [])
@@ -148,7 +148,7 @@ export function AudioProvider({ children }: AudioProviderProps) {
       try {
         backgroundMusicRef.current.pause()
         backgroundMusicRef.current.currentTime = 0
-      } catch {}
+      } catch { /* noop */ }
       backgroundMusicRef.current = null
       setIsPlaying(false)
     }
