@@ -353,8 +353,20 @@ Paleta de cores sombria e energética para festivais de rua.
 }
 
 @layer utilities {
-  /* Custom animations */
-  @keyframes gradientShift {
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 1000px; /* reserva espaço estimado para evitar jumps */
+  }
+  .cv-auto-lg {
+    content-visibility: auto;
+    contain-intrinsic-size: 800px; /* seções grandes */
+  }
+  .cv-contain {
+    contain: content;
+  }
+}
+
+@keyframes gradientShift {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
@@ -458,7 +470,6 @@ Paleta de cores sombria e energética para festivais de rua.
   .glow-accent {
     box-shadow: var(--glow-accent);
   }
-}
 
 /* Accessibility Utilities */
 @layer utilities {

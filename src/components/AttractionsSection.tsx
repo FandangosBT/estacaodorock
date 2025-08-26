@@ -100,6 +100,15 @@ const AttractionsSection: React.FC = () => {
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const innerRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  // Travar scroll do body quando modal aberto (evita "travar" sensação por overflow)
+  useEffect(() => {
+    if (selected) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [selected]);
+
   // Float idle em cada card (yoyo)
   useEffect(() => {
     if (!enableAnimations) return;
@@ -262,6 +271,9 @@ const AttractionsSection: React.FC = () => {
       );
     }
 
+    // Foca o card para acessibilidade e para garantir scroll correto no iOS
+    overlayCardRef.current?.focus();
+
     return () => {
       tl.kill();
     };
@@ -379,11 +391,16 @@ const AttractionsSection: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               aria-live="polite"
+              onClick={onClose}
+              onTouchEnd={onClose}
+              onPointerUp={onClose}
             >
-              <button
+              <div
                 className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-                aria-label="Fechar detalhes"
+                aria-hidden="true"
                 onClick={onClose}
+                onTouchEnd={onClose}
+                onPointerUp={onClose}
               />
 
               {ATTRACTIONS.filter((a) => a.id === selected).map((a) => {
@@ -393,36 +410,54 @@ const AttractionsSection: React.FC = () => {
                     key={a.id}
                     ref={overlayCardRef}
                     layoutId={enableAnimations ? `card-${a.id}` : undefined}
-                    className="relative z-10 w-[92vw] max-w-xl rounded-2xl overflow-hidden border border-white/15 bg-black/90"
+                    className="relative z-10 w-[92vw] max-w-xl max-h-[85vh] md:max-h-[80vh] rounded-2xl overflow-hidden border border-white/15 bg-black/90"
                     initial={enableAnimations ? { borderRadius: 24 } : undefined}
                     animate={enableAnimations ? { borderRadius: 20 } : undefined}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby={`details-${a.id}-title`}
+                    aria-describedby={`details-${a.id}-desc`}
+                    tabIndex={-1}
+                    style={{ touchAction: 'pan-y' }}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onPointerMove={(e) => e.stopPropagation()}
+                    onPointerUp={(e) => e.stopPropagation()}
                   >
                     {/* Header com imagem */}
                     <div className="relative h-40 w-full" aria-hidden="true">
-                      <OptimizedImage src={a.imageSrc} alt={a.imageAlt} className="w-full h-full" lazy />
-                      <div className={`absolute inset-0 bg-gradient-to-br ${a.gradientFrom} ${a.gradientTo}`} />
-                      <div className="absolute inset-0 bg-black/40" />
+                      <OptimizedImage src={a.imageSrc} alt={a.imageAlt} className="w-full h-full" lazy={false} placeholderClassName="hidden" />
+                      <div className={`absolute inset-0 bg-gradient-to-br ${a.gradientFrom} ${a.gradientTo} pointer-events-none`} />
+                      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
                     </div>
 
-                    <div id={`details-${a.id}`} className="relative z-10 p-6 text-white">
-                      <div className="flex items-start gap-4">
-                        <div className="shrink-0">
-                          <Icon aria-hidden className="w-10 h-10 text-white/90" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 ref={overlayTitleRef} className="text-2xl font-extrabold uppercase tracking-wide">{a.title}</h3>
-                          <p className="mt-2 text-white/90 leading-relaxed">
-                            {a.description}
-                          </p>
-                        </div>
-                        <div className="-mt-2">
-                          <button
-                            onClick={onClose}
-                            className="p-2 rounded-md bg-white/10 hover:bg-white/20 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60"
-                            aria-label="Fechar"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
+                    <div className="relative z-10">
+                      <div id={`details-${a.id}`} className="p-6 text-white overflow-y-auto max-h-[calc(85vh-10rem)] md:max-h-[calc(80vh-10rem)] overscroll-contain">
+                        <div className="flex items-start gap-4">
+                          <div className="shrink-0">
+                            <Icon aria-hidden className="w-10 h-10 text-white/90" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 id={`details-${a.id}-title`} ref={overlayTitleRef} className="text-2xl font-extrabold uppercase tracking-wide">{a.title}</h3>
+                            <p id={`details-${a.id}-desc`} className="mt-2 text-white/90 leading-relaxed">
+                              {a.description}
+                            </p>
+                          </div>
+                          <div className="-mt-2">
+                            <button
+                              type="button"
+                              onTouchStart={(e) => { e.stopPropagation(); }}
+                              onMouseDown={(e) => { e.stopPropagation(); }}
+                              onClick={(e) => { e.stopPropagation(); onClose(); }}
+                              className="p-2 rounded-md bg-white/10 hover:bg-white/20 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60 pointer-events-auto"
+                              aria-label="Fechar"
+                            >
+                              <X className="w-6 h-6" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { Navigation } from '@/components/Navigation';
 import HeroSection from '@/components/HeroSection';
 import { GaleriaSection } from '@/components/GaleriaSection';
-// import { InfoSection } from '@/components/InfoSection';
-// import { SponsorsSection } from '@/components/SponsorsSection';
-import { DemoHeroScroll } from '@/components/ui/hero-scroll-animation-demo';
+import HeroScrollAnimation from '@/components/ui/hero-scroll-animation';
 import { motion, useReducedMotion } from 'framer-motion';
 import { FloatingPanel } from '@/components/ui/FloatingPanel';
 import LineupPoster from '@/components/LineupPoster';
@@ -153,9 +151,9 @@ const Index = () => {
           <BandBiosSection />
         </motion.div>
         <div className="mt-8" />
-        <AttractionsSection />
-        <MapSection />
-        <InteractivitySection />
+        <div className="cv-auto"><AttractionsSection /></div>
+        <div className="cv-auto"><MapSection /></div>
+        <div className="cv-auto"><InteractivitySection /></div>
         {/* Mural do Caos - imediatamente abaixo da seção Interativa */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -176,8 +174,9 @@ const Index = () => {
         {/* Seção Sobre (logo abaixo do Mural) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
           className="mt-6 md:mt-10"
         >
           <div className="max-w-7xl mx-auto px-4">
@@ -239,9 +238,10 @@ const Index = () => {
         {/* Seção Apoio (logo abaixo de Sobre) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-6 md:mt-10"
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+           className="mt-6 md:mt-10"
         >
           <div className="max-w-7xl mx-auto px-4">
             <div className="relative">
@@ -297,7 +297,14 @@ const Index = () => {
         </motion.div>
 
         {/* Redes Sociais */}
-        <SocialLinksSection />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+        >
+          <SocialLinksSection />
+        </motion.div>
 
 
         {/* Modais das seções */}
@@ -336,7 +343,7 @@ const Index = () => {
           
           
           
-          <DemoHeroScroll />
+          <HeroScrollAnimation />
         </div>
       </div>
     </div>

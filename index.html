@@ -47,6 +47,43 @@
 
     <!-- Preload de mídia crítica do footer para acelerar exibição e autoplay -->
     <link rel="preload" as="video" href="/video/armagedon.mp4" type="video/mp4" />
+    <!-- Preload do áudio usado no loader para reduzir latência no primeiro toque -->
+    <link rel="preload" as="audio" href="/audio/train-whistle.mp3" type="audio/mpeg" />
+    <link rel="preload" as="audio" href="/audio/train-whistle.wav" type="audio/wav" />
+
+    <script>
+      // Desbloqueio mínimo de WebAudio em iOS sob o primeiro gesto do usuário
+      (function(){
+        if (typeof window === 'undefined') return;
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        var unlocked = false;
+        function unlock(){
+          if (unlocked) return;
+          try {
+            var ctx = new Ctx();
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            gain.gain.value = 0.0001; // inaudível
+            osc.connect(gain).connect(ctx.destination);
+            if (ctx.state === 'suspended') {
+              ctx.resume().catch(function(){})
+            }
+            osc.start(0);
+            setTimeout(function(){
+              try { osc.stop(0); } catch(e){}
+              unlocked = true;
+            }, 10);
+          } catch(e){}
+          window.removeEventListener('touchstart', unlock, true);
+          window.removeEventListener('pointerdown', unlock, true);
+          window.removeEventListener('click', unlock, true);
+        }
+        window.addEventListener('touchstart', unlock, true);
+        window.addEventListener('pointerdown', unlock, true);
+        window.addEventListener('click', unlock, true);
+      })();
+    </script>
   </head>
 
   <body>

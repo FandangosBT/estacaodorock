@@ -17,7 +17,8 @@ interface AudioContextType {
   toggleAudio: () => void
   
   // Audio playback
-  playSound: (soundUrl: string, options?: { volume?: number; loop?: boolean }) => Promise<void>
+  playSound: (soundUrl: string, options?: { volume?: number; loop?: boolean; force?: boolean }) => Promise<void>
+  preloadSound: (soundUrl: string) => void
   stopAllSounds: () => void
   
   // Background music
@@ -48,6 +49,7 @@ export function AudioProvider({ children }: AudioProviderProps) {
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null)
   const soundEffectsRef = useRef<HTMLAudioElement[]>([])
   const autoEnableAttachedRef = useRef(false)
+  const audioCacheRef = useRef<Map<string, HTMLAudioElement>>(new Map())
   
   const effectiveVolume = useMemo(() => {
     if (!audioEnabled || isMuted) return 0
@@ -76,34 +78,67 @@ export function AudioProvider({ children }: AudioProviderProps) {
     setAudioEnabled(!audioEnabled)
   }, [audioEnabled, setAudioEnabled])
   
-  const playSound = useCallback(async (soundUrl: string, options: { volume?: number; loop?: boolean } = {}) => {
-    if (!audioEnabled || isMuted) return
+  // Helper: cria/retorna um elemento de áudio em cache
+  const getOrCreateAudio = useCallback((soundUrl: string) => {
+    let audio = audioCacheRef.current.get(soundUrl)
+    if (!audio) {
+      audio = new Audio(soundUrl)
+      audio.preload = 'auto'
+      audio.crossOrigin = 'anonymous'
+      // inicia pré-carregamento
+      try { audio.load() } catch { /* noop */ }
+      audioCacheRef.current.set(soundUrl, audio)
+    }
+    return audio
+  }, [])
+
+  const preloadSound = useCallback((soundUrl: string) => {
+    getOrCreateAudio(soundUrl)
+  }, [getOrCreateAudio])
+  
+  const playSound = useCallback(async (soundUrl: string, options: { volume?: number; loop?: boolean; force?: boolean } = {}) => {
+    // Se não for forçado, obedecer flag global
+    if (!options.force && (!audioEnabled || isMuted)) return
+    if (isMuted) return
     
     try {
-      const audio = new Audio(soundUrl)
-      audio.volume = (options.volume ?? 1) * Math.min(1, Math.max(0, effectiveVolume))
+      const base = getOrCreateAudio(soundUrl)
+      // Reusar o mesmo elemento quando não há concorrência, senão clonar
+      const audio = base.paused ? base : (base.cloneNode(true) as HTMLAudioElement)
+
+      // Volume: quando force=true, ignora o gate do effectiveVolume para permitir som imediato após gesto do usuário
+      const baseVol = Math.min(1, Math.max(0, options.volume ?? 1))
+      const globalVol = options.force ? 1 : Math.min(1, Math.max(0, effectiveVolume))
+      audio.volume = baseVol * globalVol
+
       audio.loop = options.loop ?? false
       audio.preload = 'auto'
       audio.crossOrigin = 'anonymous'
+
+      // Se for o elemento base e estiver tocando, reinicia do início
+      if (audio === base) {
+        try { audio.currentTime = 0 } catch { /* noop */ }
+      }
       
-      // Add to sound effects array for cleanup
+      // Track para cleanup apenas quando for um elemento "efêmero"
       soundEffectsRef.current.push(audio)
-      
-      // Remove from array when finished or on pause
       const removeRef = () => {
         const index = soundEffectsRef.current.indexOf(audio)
         if (index > -1) {
           soundEffectsRef.current.splice(index, 1)
         }
       }
-      audio.addEventListener('ended', removeRef)
-      audio.addEventListener('pause', removeRef)
+      audio.addEventListener('ended', removeRef, { once: true })
+      audio.addEventListener('pause', removeRef, { once: true })
       
-      await audio.play()
+      const playPromise = audio.play()
+      if (playPromise !== undefined) {
+        await playPromise
+      }
     } catch (error) {
       console.warn('Failed to play sound:', error)
     }
-  }, [audioEnabled, isMuted, effectiveVolume])
+  }, [audioEnabled, isMuted, effectiveVolume, getOrCreateAudio])
   
   const stopAllSounds = useCallback(() => {
     soundEffectsRef.current.forEach(audio => {
@@ -125,11 +160,9 @@ export function AudioProvider({ children }: AudioProviderProps) {
         backgroundMusicRef.current = null
       }
       
-      const audio = new Audio(musicUrl)
+      const audio = getOrCreateAudio(musicUrl)
       audio.volume = Math.min(1, Math.max(0, effectiveVolume)) * 0.3 // Background music should be quieter
       audio.loop = true
-      audio.preload = 'auto'
-      audio.crossOrigin = 'anonymous'
       
       backgroundMusicRef.current = audio
       
@@ -141,7 +174,7 @@ export function AudioProvider({ children }: AudioProviderProps) {
     } catch (error) {
       console.warn('Failed to play background music:', error)
     }
-  }, [audioEnabled, isMuted, effectiveVolume])
+  }, [audioEnabled, isMuted, effectiveVolume, getOrCreateAudio])
   
   const stopBackgroundMusic = useCallback(() => {
     if (backgroundMusicRef.current) {
@@ -222,11 +255,12 @@ export function AudioProvider({ children }: AudioProviderProps) {
     toggleMute,
     toggleAudio,
     playSound,
+    preloadSound,
     stopAllSounds,
     playBackgroundMusic,
     stopBackgroundMusic,
     setBackgroundVolume,
-  }), [audioEnabled, audioVolume, audioPreference, isMuted, isPlaying, setAudioEnabled, setAudioVolume, setAudioPreference, toggleMute, toggleAudio, playSound, stopAllSounds, playBackgroundMusic, stopBackgroundMusic, setBackgroundVolume])
+  }), [audioEnabled, audioVolume, audioPreference, isMuted, isPlaying, setAudioEnabled, setAudioVolume, setAudioPreference, toggleMute, toggleAudio, playSound, preloadSound, stopAllSounds, playBackgroundMusic, stopBackgroundMusic, setBackgroundVolume])
   
   return (
     <AudioContext.Provider value={value}>

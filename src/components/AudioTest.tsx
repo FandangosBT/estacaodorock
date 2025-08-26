@@ -8,7 +8,8 @@ const AudioTest: React.FC = () => {
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
     const logMessage = `${timestamp}: ${message}`;
-    console.log(logMessage);
+    const isDev = import.meta.env.MODE !== 'production'
+    if (isDev) console.debug(logMessage);
     setLogs(prev => [...prev.slice(-10), logMessage]); // Keep last 10 logs
   };
 

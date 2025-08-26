@@ -44,7 +44,8 @@ export const useMobileOptimizations = (): MobileOptimizations => {
           batteryLevel = battery.level;
           isCharging = battery.charging;
         } catch (error) {
-          console.log('Battery API not available');
+          const __DEV__ = typeof import.meta !== 'undefined' ? import.meta.env.MODE !== 'production' : true
+          if (__DEV__) console.debug('Battery API not available');
         }
       }
       

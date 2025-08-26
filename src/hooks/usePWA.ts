@@ -49,8 +49,6 @@ export const usePWA = (): PWAState & PWAActions => {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
         
-        console.log('Service Worker registrado:', registration);
-        
         // Verifica por atualizações
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
@@ -82,7 +80,6 @@ export const usePWA = (): PWAState & PWAActions => {
   // Instala o app
   const installApp = useCallback(async (): Promise<boolean> => {
     if (!state.installPrompt) {
-      console.log('Prompt de instalação não disponível');
       return false;
     }
 
@@ -91,7 +88,6 @@ export const usePWA = (): PWAState & PWAActions => {
       const choiceResult = await state.installPrompt.userChoice;
       
       if (choiceResult.outcome === 'accepted') {
-        console.log('App instalado com sucesso');
         setState(prev => ({ 
           ...prev, 
           isInstallable: false, 
@@ -100,7 +96,6 @@ export const usePWA = (): PWAState & PWAActions => {
         }));
         return true;
       } else {
-        console.log('Instalação cancelada pelo usuário');
         setState(prev => ({ ...prev, installPrompt: null }));
         return false;
       }

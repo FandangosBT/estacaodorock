@@ -150,7 +150,7 @@ const HeroScrollAnimation = forwardRef<HTMLElement, HeroScrollProps>(({ linkHref
         await video.play();
         setHasPlayed(true);
       } catch (err) {
-        console.log('Erro ao reproduzir vídeo:', err);
+        console.warn('Erro ao reproduzir vídeo:', err);
       }
     }
   }, [hasPlayed]);

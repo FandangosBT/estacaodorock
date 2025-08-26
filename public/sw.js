@@ -252,3 +252,14 @@ self.addEventListener('message', (event) => {
     );
   }
 });
+
+(() => {
+  try {
+    const host = self && self.location && self.location.hostname;
+    const __SW_DEV__ = host === 'localhost' || host === '127.0.0.1';
+    const __origLog = console.log.bind(console);
+    console.log = (...args) => { if (__SW_DEV__) __origLog(...args); };
+  } catch (_) {
+    // noop
+  }
+})();

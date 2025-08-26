@@ -22,7 +22,6 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className })
     const success = await installApp();
     if (success) {
       // Opcional: mostrar feedback de sucesso
-      console.log('App instalado com sucesso!');
     }
   };
 

@@ -13,7 +13,6 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import PreHome from "./pages/PreHome";
 import PageLoader from "./components/PageLoader";
-import LoaderExample from "./pages/LoaderExample";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -53,7 +52,6 @@ const App = () => {
                   <PWAUpdatePrompt />
                   <Routes>
                     <Route path="/" element={<Index />} />
-                    <Route path="/loader-example" element={<LoaderExample />} />
                     <Route path="/festival" element={<Index />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />

@@ -209,9 +209,7 @@ export class PerformanceMonitor {
     const duration = performance.now() - startTime
     this.measures.set(name, duration)
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`⏱️ ${name}: ${duration.toFixed(2)}ms`)
-    }
+    if (typeof import.meta !== 'undefined' && import.meta.env.MODE !== 'production') console.debug(`⏱️ ${name}: ${duration.toFixed(2)}ms`)
     
     return duration
   }
@@ -424,3 +422,5 @@ export function useVideoOffscreen(
 
   return { isVisible }
 }
+
+const __DEV__ = typeof import.meta !== 'undefined' ? import.meta.env.MODE !== 'production' : true
