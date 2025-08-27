@@ -148,13 +148,14 @@ export default function LineupPoster() {
         rotation={20}
         className="absolute top-2 left-2 z-10"
       />
-      <TapeElement 
+      {/* Removido o TapeElement branco que causava o artefato visual próximo ao título */}
+      {/* <TapeElement 
         variant="horizontal"
         color="white"
         size="md"
         rotation={-10}
         className="absolute top-4 right-2 z-10"
-      />
+      /> */}
       <TapeElement 
         variant="vertical"
         color="red"

@@ -285,8 +285,8 @@ const HeroScrollAnimation = forwardRef<HTMLElement, HeroScrollProps>(({ linkHref
                     target={linkTarget}
                     rel={linkTarget === '_blank' ? 'noopener noreferrer' : undefined}
                     aria-label={linkAriaLabel || 'Abrir página relacionada ao vídeo'}
-                    className={`absolute inset-0 z-10 ${hasPlayed ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60`}
-                    tabIndex={hasPlayed ? 0 : -1}
+                    className="absolute inset-0 z-30 pointer-events-auto cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60"
+                    tabIndex={0}
                   />
                 )}
                 

@@ -343,7 +343,11 @@ const Index = () => {
           
           
           
-          <HeroScrollAnimation />
+          <HeroScrollAnimation 
+            linkHref="https://www.instagram.com/epicoeric/"
+            linkTarget="_blank"
+            linkAriaLabel="Abrir Instagram @epicoeric em nova aba"
+          />
         </div>
       </div>
     </div>
