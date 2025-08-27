@@ -11,6 +11,8 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { SkipLinks } from "@/components/SkipLinks";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import PreHome from "./pages/PreHome";
 import PageLoader from "./components/PageLoader";
 import Index from "./pages/Index";
@@ -56,6 +58,8 @@ const App = () => {
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  <Analytics />
+                  <SpeedInsights />
                 </BrowserRouter>
               </TooltipProvider>
             )}
