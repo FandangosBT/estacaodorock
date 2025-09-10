@@ -313,25 +313,49 @@ export const GaleriaSection = () => {
     const container = imageContainerRef.current;
     if (!container) return;
 
+    const getViewportHeight = () => (typeof window !== 'undefined' && (window as any).visualViewport?.height) || window.innerHeight;
+
     const updateFromImage = () => {
       const headerH = headerElRef.current?.getBoundingClientRect().height ?? 0;
       const footerH = footerElRef.current?.getBoundingClientRect().height ?? 0;
-      const margin = 28; // folga visual
-      const byViewport = Math.floor(window.innerHeight * 0.88);
-      const available = Math.max(220, Math.min(window.innerHeight - headerH - footerH - margin, byViewport));
+      const margin = 24; // folga visual menor para maximizar a área da imagem
+      const viewportH = getViewportHeight();
+      const maxByViewport = Math.floor(viewportH * 0.92);
+      const available = Math.max(200, Math.min(viewportH - headerH - footerH - margin, maxByViewport));
       container.style.height = `${available}px`;
+
+      // Ajusta a largura do card do modal para acompanhar a largura ideal da imagem
+      const img = activeImageRef.current;
+      const card = modalRef.current;
+      if (img && card && img.naturalWidth && img.naturalHeight) {
+        const aspect = img.naturalWidth / img.naturalHeight;
+        const idealWidth = Math.min(Math.floor(available * aspect), Math.floor(window.innerWidth - 32));
+        // Limite superior opcional para não exceder designs grandes
+        const clamped = Math.max(280, Math.min(idealWidth, 1200));
+        card.style.width = `${clamped}px`;
+      }
     };
 
     const ro = new ResizeObserver(() => updateFromImage());
     if (activeImageRef.current) ro.observe(activeImageRef.current);
+
+    // Ouvir mudanças de viewport visual (iOS toolbars, etc.)
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    const onVVResize = () => updateFromImage();
+    vv?.addEventListener?.('resize', onVVResize);
+    vv?.addEventListener?.('scroll', onVVResize);
+
     window.addEventListener('resize', updateFromImage);
-    // chamada inicial
+    // chamada inicial e após baseLoaded para garantir cálculo com dimensões reais
     updateFromImage();
 
     return () => {
       ro.disconnect();
+      vv?.removeEventListener?.('resize', onVVResize);
+      vv?.removeEventListener?.('scroll', onVVResize);
       window.removeEventListener('resize', updateFromImage);
       if (container) container.style.height = '';
+      if (modalRef.current) modalRef.current.style.width = '';
     };
   }, [showModal, displayedIndex, baseLoaded]);
 
@@ -618,7 +642,7 @@ const handleCaptionScroll = () => {
                       }}
                       decoding="async"
                       loading="eager"
-                      fetchpriority="high"
+                      fetchPriority="high"
                       draggable={false}
                     />
 
@@ -641,7 +665,7 @@ const handleCaptionScroll = () => {
                           className="w-auto h-auto max-h-full max-w-full object-contain shadow-2xl select-none"
                           decoding="async"
                           loading="eager"
-                          fetchpriority="low"
+                          fetchPriority="low"
                           draggable={false}
                         />
                       </div>
