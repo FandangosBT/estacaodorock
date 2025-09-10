@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Heart, Camera, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, X, Download } from 'lucide-react';
 import { HoverImageGallery } from '@/components/ui/hover-image-gallery';
-import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Array limpo apenas com imagens existentes
 const muralImages = [
@@ -106,11 +105,35 @@ const allMuralPhotos = muralImages.map((image, index) => {
   };
 });
 
+// Novo tipo para fotos da galeria de 2025 (manifest)
+type GalleryPhoto = {
+  id: number;
+  thumb: string;
+  original: string;
+  download: string;
+  likes: number;
+  liked: boolean;
+  caption: string; // sem metadados por enquanto
+};
+
+type Manifest = {
+  year: number;
+  count: number;
+  basePath: string;
+  items: { name: string; thumb: string; original: string; download: string }[];
+};
+
 export const GaleriaSection = () => {
   // Estado unificado para todas as fotos (grid + modal)
-  const [allPhotos, setAllPhotos] = useState(allMuralPhotos);
+  const [allPhotos, setAllPhotos] = useState<GalleryPhoto[]>([]);
   const [showModal, setShowModal] = useState(false);
+  // Índice alvo (pedido pelo usuário)
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // Índice efetivamente exibido (para crossfade suave)
+  const [displayedIndex, setDisplayedIndex] = useState(0);
+  const [prevIndex, setPrevIndex] = useState<number | null>(null);
+  const [baseLoaded, setBaseLoaded] = useState(false);
+  const [fadingOverlay, setFadingOverlay] = useState(false);
   // Portal root element for Modal para evitar overflow/transform em iOS
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
   useEffect(() => {
@@ -130,28 +153,76 @@ export const GaleriaSection = () => {
       }
     };
   }, []);
+
+  // Carregar manifest da galeria 2025
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    async function load() {
+      try {
+        const res = await fetch('/galeria/2025/manifest.json', { signal: controller.signal });
+        if (!res.ok) throw new Error('Falha ao carregar manifest da galeria');
+        const manifest: Manifest = await res.json();
+        if (cancelled) return;
+        const photos: GalleryPhoto[] = manifest.items.map((it, idx) => ({
+          id: idx + 1,
+          thumb: it.thumb,
+          original: it.original,
+          download: it.download || it.original,
+          likes: 0,
+          liked: false,
+          caption: ''
+        }));
+        setAllPhotos(photos);
+      } catch (e) {
+        // fallback silencioso: mantém vazio; poderia exibir um aviso no futuro
+        console.error(e);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
+  
+  // Prefetch das imagens vizinhas para transições mais rápidas
+  useEffect(() => {
+    if (!allPhotos.length) return;
+    const nextIdx = (displayedIndex + 1) % allPhotos.length;
+    const prevIdx = (displayedIndex - 1 + allPhotos.length) % allPhotos.length;
+    const preload = (idx: number) => {
+      const url = allPhotos[idx]?.original;
+      if (!url) return;
+      const img = new Image();
+      img.src = url;
+    };
+    preload(nextIdx);
+    preload(prevIdx);
+  }, [displayedIndex, allPhotos]);
   
   // Refs para foco e acessibilidade
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  // Refs de layout: header e footer do modal para cálculo de altura disponível
+  const headerElRef = useRef<HTMLDivElement>(null);
+  const footerElRef = useRef<HTMLDivElement>(null);
   // Refs para medir e adaptar (ResizeObserver) e para swipe
   const imageContainerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const activeImageRef = useRef<HTMLImageElement>(null);
+  const overlayImageRef = useRef<HTMLImageElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const touchStartTime = useRef<number>(0);
 
-  // Derivar fotos da grid a partir do estado unificado
-  const gridPhotos = allPhotos.slice(0, 6).map((photo, index) => ({
-    ...photo,
-    id: index + 1 // IDs da grid (1-6)
-  }));
+  // Derivar fotos da grid a partir do estado unificado (primeiras 6)
+  const gridPhotos = allPhotos.slice(0, 6);
 
   // Função unificada para curtir (funciona tanto na grid quanto no modal)
   const handleLike = (photoIndex: number, isGridPhoto = false) => {
     if (isGridPhoto) {
       // Se for da grid, encontrar o índice correspondente no array completo
-      const actualIndex = photoIndex - 1; // Grid usa IDs 1-6, array usa índices 0-5
+      const actualIndex = photoIndex - 1; // IDs 1-6 para a grid
       setAllPhotos(prev => prev.map((photo, idx) => 
         idx === actualIndex 
           ? { 
@@ -175,12 +246,25 @@ export const GaleriaSection = () => {
     }
   };
 
+  const startTransitionTo = (nextIdx: number) => {
+    if (!allPhotos.length) return;
+    if (nextIdx === displayedIndex) return;
+    setPrevIndex(displayedIndex);
+    setDisplayedIndex(nextIdx);
+    setBaseLoaded(false);
+    setFadingOverlay(false);
+  };
+
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % allPhotos.length);
+    if (!allPhotos.length) return;
+    const nextIdx = (displayedIndex + 1) % allPhotos.length;
+    startTransitionTo(nextIdx);
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + allPhotos.length) % allPhotos.length);
+    if (!allPhotos.length) return;
+    const prevIdx = (displayedIndex - 1 + allPhotos.length) % allPhotos.length;
+    startTransitionTo(prevIdx);
   };
 
   const openModal = () => {
@@ -223,24 +307,23 @@ export const GaleriaSection = () => {
     touchStartY.current = null;
   };
 
-  // Adaptar altura do container da imagem com ResizeObserver
+  // Adaptar altura do container da imagem com ResizeObserver (altura baseada no viewport menos header/footer)
   useEffect(() => {
     if (!showModal) return;
-    const img = imageRef.current;
     const container = imageContainerRef.current;
-    if (!img || !container) return;
+    if (!container) return;
 
     const updateFromImage = () => {
-      const rect = img.getBoundingClientRect();
-      const styles = window.getComputedStyle(container);
-      const paddingY = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
-      const target = Math.min(rect.height + paddingY, window.innerHeight * 0.75);
-      const finalH = Math.max(300, target);
-      container.style.height = `${finalH}px`;
+      const headerH = headerElRef.current?.getBoundingClientRect().height ?? 0;
+      const footerH = footerElRef.current?.getBoundingClientRect().height ?? 0;
+      const margin = 28; // folga visual
+      const byViewport = Math.floor(window.innerHeight * 0.88);
+      const available = Math.max(220, Math.min(window.innerHeight - headerH - footerH - margin, byViewport));
+      container.style.height = `${available}px`;
     };
 
     const ro = new ResizeObserver(() => updateFromImage());
-    ro.observe(img);
+    if (activeImageRef.current) ro.observe(activeImageRef.current);
     window.addEventListener('resize', updateFromImage);
     // chamada inicial
     updateFromImage();
@@ -248,10 +331,9 @@ export const GaleriaSection = () => {
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', updateFromImage);
-      // limpa altura customizada ao fechar ou trocar imagem
       if (container) container.style.height = '';
     };
-  }, [showModal, currentImageIndex]);
+  }, [showModal, displayedIndex, baseLoaded]);
 
   // Navegação por teclado e foco inicial
   useEffect(() => {
@@ -291,8 +373,8 @@ export const GaleriaSection = () => {
     };
   }, [showModal]);
 
-  const currentPhoto = allPhotos[currentImageIndex];
-const isLongCaption = currentImageIndex === 1 || currentImageIndex === 2;
+  const currentPhoto = allPhotos[displayedIndex];
+const isLongCaption = false; // sem metadados longos por enquanto
 const captionRef = useRef<HTMLDivElement>(null);
 const [hasOverflow, setHasOverflow] = useState(false);
 const [isAtBottom, setIsAtBottom] = useState(false);
@@ -317,7 +399,16 @@ useEffect(() => {
   return () => {
     ro.disconnect();
   };
-}, [isLongCaption, currentImageIndex, showModal]);
+}, [isLongCaption, displayedIndex, showModal]);
+
+  // Quando a imagem base carregar, inicia fade-out do overlay (imagem anterior)
+  useEffect(() => {
+    if (prevIndex !== null && baseLoaded) {
+      // inicia fade no próximo frame para garantir transição
+      const id = requestAnimationFrame(() => setFadingOverlay(true));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [prevIndex, baseLoaded]);
 
 const handleCaptionScroll = () => {
   const el = captionRef.current;
@@ -326,41 +417,96 @@ const handleCaptionScroll = () => {
 };
 
   const Modal = ({ children, title }: { children: ReactNode; title: string }) => {
+    // Travar scroll do body enquanto o modal estiver aberto
+    useEffect(() => {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }, []);
+
     const content = (
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      >
-        <div
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-          onClick={closeModal}
-          aria-hidden="true"
-        />
-        <div className="relative z-10 w-full max-w-6xl max-h-[95vh] overflow-hidden bg-black/90 border border-white/20 rounded-2xl flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
-            <h2 id="modal-title" className="text-xl md:text-2xl font-bold text-white uppercase tracking-wider">
-              {title}
-            </h2>
-            <button
-              ref={closeButtonRef}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                closeModal();
-              }}
-              className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition focus:ring-2 focus:ring-white/30 focus:outline-none"
-              aria-label="Fechar galeria (pressione ESC)"
-              type="button"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          {children}
-        </div>
-      </div>
+      <>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 [perspective:800px] [transform-style:preserve-3d]"
+        >
+          {/* Overlay animado com blur */}
+          <motion.div
+            className="absolute inset-0 bg-black/70 backdrop-blur-md"
+            aria-hidden="true"
+            onClick={closeModal}
+            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            animate={{ opacity: 1, backdropFilter: 'blur(12px)' }}
+            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          />
+
+          {/* Card com borda gradiente e glassmorphism */
+          // Ajustado para o cartão se adaptar ao tamanho real da imagem (sem largura forçada)
+          }
+          <motion.div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+            className="relative z-10 w-full max-w-[min(1200px,calc(100vw-2rem))] max-h-[92vh] flex flex-col overflow-hidden rounded-2xl"
+            initial={{ opacity: 0, scale: 0.95, rotateX: 8, y: 12 }}
+            animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, rotateX: 4, y: -6 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+          >
+            <div className="p-[1px] rounded-2xl bg-gradient-to-r from-[#ff2a2a] via-[#ffbd00] to-[#ff2a2a]">
+              <div className="relative bg-black/70 backdrop-blur-xl border border-white/10 rounded-2xl">
+                {/* Brilho superior sutil */}
+                <div
+                  className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-white/10 to-transparent rounded-t-2xl"
+                  aria-hidden="true"
+                />
+
+                {/* Header */}
+                <div ref={headerElRef} className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+                  <h2 id="modal-title" className="text-xl md:text-2xl font-bold text-white uppercase tracking-wider">
+                    {title}
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    {currentPhoto && (
+                      <a
+                        href={currentPhoto.download}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 focus:ring-2 focus:ring-white/40 focus:outline-none"
+                        aria-label="Baixar imagem original"
+                      >
+                        <Download className="w-5 h-5" />
+                      </a>
+                    )}
+                    <button
+                      ref={closeButtonRef}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closeModal();
+                      }}
+                      className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 focus:ring-2 focus:ring-white/40 focus:outline-none"
+                      aria-label="Fechar galeria (pressione ESC)"
+                      type="button"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {children}
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      </>
     );
 
     if (typeof window === 'undefined') return null;
@@ -369,22 +515,15 @@ const handleCaptionScroll = () => {
   };
 
   return (
-    <motion.section id="galeria" aria-labelledby="galeria-title" className="bg-black py-20 px-6"
-      initial={{ opacity: 1, y: 0 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
+    <section id="galeria" aria-labelledby="galeria-title" className="bg-black py-20 px-6">
       <div className="max-w-6xl mx-auto py-16 px-4">
         {/* Header */}
         <div className="text-center mb-16">
           <h2 id="galeria-title" className="text-3xl md:text-4xl font-bold uppercase tracking-wide text-[#f0f0f0] text-center drop-shadow-[0_0_4px_#ff2a2a] mb-4">
-            Um Pedaço da História
+            Nossa Última Edição
           </h2>
           <p className="text-center text-white/80 max-w-3xl mx-auto text-lg md:text-xl mb-10">
-            Conheça um pedacinho da história da{" "}
-            <LinkPreview href="https://pt.wikipedia.org/wiki/Linha_Tronco_(Estrada_de_Ferro_Sorocabana)">
-              <span className="font-semibold">Linha Tronco da Estrada de Ferro Sorocabana</span>
-            </LinkPreview>
+            O Estação Rock Festival 2025 foi um sucesso! Confira nas imagens.
           </p>
           
           {/* Hover Image Gallery - Seção Especial */}
@@ -397,7 +536,7 @@ const handleCaptionScroll = () => {
             </p>
             <div className="flex justify-center">
               <HoverImageGallery 
-                images={muralImages.slice(0, 5)}
+                images={(allPhotos.length ? allPhotos.slice(0, 5).map(p => p.original) : muralImages.slice(0, 5))}
               />
             </div>
           </div>
@@ -415,27 +554,13 @@ const handleCaptionScroll = () => {
 
                 {/* Photo */}
                 <img 
-                  src={photo.image} 
-                  alt={photo.caption}
+                  src={photo.thumb}
+                  alt={photo.caption || `Foto ${photo.id}`}
                   className="w-full h-auto object-cover aspect-square"
                   loading="lazy"
                 />
 
-                {/* Curtidas */}
-                <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-[#0f0f0f]/80 px-2 py-1 rounded-full border border-white/10">
-                  <button
-                    onClick={() => handleLike(photo.id, true)}
-                    className="p-1 hover:scale-110 transition-transform focus:ring-2 focus:ring-white/30 focus:outline-none rounded-full"
-                    aria-label={`${photo.liked ? 'Remover' : 'Adicionar'} curtida`}
-                  >
-                    <Heart 
-                      className={`w-4 h-4 ${
-                        photo.liked ? 'fill-current text-[#ff2a2a]' : 'text-[#ff2a2a]'
-                      }`} 
-                    />
-                  </button>
-                  <span className="text-[#f0f0f0] text-sm">{photo.likes}</span>
-                </div>
+                {/* Removido: botões de curtir nas thumbs */}
               </div>
             ))}
           </div>
@@ -453,206 +578,127 @@ const handleCaptionScroll = () => {
           </div>
 
           {/* Modal do Carrossel */}
-          {showModal && (
-            <Modal title="Galeria Completa">
-              <div className="flex flex-col flex-1 min-h-0">
-                {/* Container da Imagem - Responsivo via ResizeObserver e sem onLoad */}
-                <div
-                  ref={imageContainerRef}
-                  className="bg-white relative flex items-center justify-center max-h-[75vh] px-16 py-4"
-                  onTouchStart={handleTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                >
-                  {/* Seta Esquerda - Posição Fixa */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); prevImage(); }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-black/70 text-white hover:bg-black/90 transition-all duration-200 focus:ring-2 focus:ring-white/30 focus:outline-none shadow-lg"
-                    aria-label="Imagem anterior (seta esquerda)"
-                    style={{ minWidth: '44px', minHeight: '44px' }}
-                    type="button"
+          <AnimatePresence initial={false} mode="wait">
+            {showModal && (
+              <Modal title="Galeria Completa">
+                <div className="flex flex-col flex-1 min-h-0">
+                  {/* Container da Imagem - Crossfade suave (overlay da anterior sobre a nova) */}
+                  <div
+                    ref={imageContainerRef}
+                    className="relative flex items-center justify-center w-full max-h-[85vh] px-2 md:px-4"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                   >
-                    <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
-                  </button>
+                    {/* Seta Esquerda - Posição Fixa */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-black/70 text-white hover:bg-black/90 transition-all duration-200 focus:ring-2 focus:ring-white/30 focus:outline-none shadow-lg"
+                      aria-label="Imagem anterior (seta esquerda)"
+                      style={{ minWidth: '44px', minHeight: '44px' }}
+                      type="button"
+                    >
+                      <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
 
-                  {/* Imagem central (sem onLoad) */}
-                  <img
-                    ref={imageRef}
-                    src={currentPhoto.image}
-                    alt={currentPhoto.caption}
-                    className="max-h-full max-w-full object-contain shadow-2xl"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
-                    }}
-                  />
+                    {/* Imagem base (nova) - não absoluta: define a largura do modal */}
+                    <img
+                      ref={activeImageRef}
+                      src={currentPhoto?.original}
+                      alt={currentPhoto?.caption || `Foto ${displayedIndex + 1}`}
+                      className="w-auto h-auto max-h-full max-w-full object-contain shadow-2xl select-none"
+                      onLoad={() => setBaseLoaded(true)}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                      draggable={false}
+                    />
 
-                  {/* Seta Direita - Posição Fixa */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-black/70 text-white hover:bg-black/90 transition-all duration-200 focus:ring-2 focus:ring-white/30 focus:outline-none shadow-lg"
-                    aria-label="Próxima imagem (seta direita)"
-                    style={{ minWidth: '44px', minHeight: '44px' }}
-                    type="button"
-                  >
-                    <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
-                  </button>
+                    {/* Overlay com a imagem anterior (fade-out) */}
+                    {prevIndex !== null && (
+                      <div
+                        className={`absolute inset-0 grid place-items-center transition-opacity duration-300 ease-in-out ${fadingOverlay ? 'opacity-0' : 'opacity-100'}`}
+                        onTransitionEnd={() => {
+                          // Finaliza overlay apos o fade-out
+                          setPrevIndex(null);
+                          setFadingOverlay(false);
+                        }}
+                      >
+                        <img
+                          ref={overlayImageRef}
+                          src={allPhotos[prevIndex]?.original}
+                          alt={allPhotos[prevIndex!]?.caption || `Foto ${prevIndex + 1}`}
+                          className="w-auto h-auto max-h-full max-w-full object-contain shadow-2xl select-none"
+                          draggable={false}
+                        />
+                      </div>
+                    )}
 
-                  {/* Contador - Posição Consistente */}
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg z-10">
-                    {currentImageIndex + 1} / {allPhotos.length}
+                    {/* Seta Direita - Posição Fixa */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-black/70 text-white hover:bg-black/90 transition-all duration-200 focus:ring-2 focus:ring-white/30 focus:outline-none shadow-lg"
+                      aria-label="Próxima imagem (seta direita)"
+                      style={{ minWidth: '44px', minHeight: '44px' }}
+                      type="button"
+                    >
+                      <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
+
+                    {/* Contador - Posição Consistente */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg z-10">
+                      {displayedIndex + 1} / {allPhotos.length}
+                    </div>
                   </div>
-                </div>
 
-                {/* Info da Imagem - Layout Melhorado */}
-                <div className="p-4 md:p-6 border-t border-white/10 bg-black/50 backdrop-blur-sm flex-shrink-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      {isLongCaption ? (
-                        <div className="relative">
-                          <div
-                            id="caption-scroll"
-                            ref={captionRef}
-                            onScroll={handleCaptionScroll}
-                            role="region"
-                            aria-label="Legenda completa (role para ver tudo)"
-                            tabIndex={0}
-                            className="text-white font-medium mb-2 text-base leading-relaxed max-h-[45vh] sm:max-h-40 md:max-h-48 overflow-y-auto pr-2 touch-pan-y overscroll-y-contain focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-                            style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}
-                          >
-                            {currentPhoto.caption}
-                          </div>
-                          {showIndicator && (
+                  {/* Info da Imagem - Layout Melhorado */}
+                  <div ref={footerElRef} className="p-4 md:p-6 border-t border-white/10 bg-black/50 backdrop-blur-sm flex-shrink-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        {isLongCaption ? (
+                          <div className="relative">
                             <div
-                              aria-hidden="true"
-                              className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-black/60 flex items-end justify-end px-2 pb-1 transition-opacity duration-300"
+                              id="caption-scroll"
+                              ref={captionRef}
+                              onScroll={handleCaptionScroll}
+                              role="region"
+                              aria-label="Legenda completa (role para ver tudo)"
+                              tabIndex={0}
+                              className="text-white font-medium mb-2 text-base leading-relaxed max-h-[45vh] sm:max-h-40 md:max-h-48 overflow-y-auto pr-2 touch-pan-y overscroll-y-contain focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                              style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}
                             >
-                              <span className="text-white/70 text-[11px] uppercase tracking-wide bg-black/30 rounded px-1.5 py-0.5">
-                                role para ver tudo
-                              </span>
+                              {currentPhoto?.caption}
                             </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-white font-medium mb-2 text-base leading-relaxed">
-                          {currentPhoto.caption}
+                            {showIndicator && (
+                              <div
+                                aria-hidden="true"
+                                className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-black/60 flex items-end justify-end px-2 pb-1 transition-opacity duration-300"
+                              >
+                                <span className="text-white/70 text-[11px] uppercase tracking-wide bg-black/30 rounded px-1.5 py-0.5">
+                                  role para ver tudo
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-white font-medium mb-2 text-base leading-relaxed">
+                            {currentPhoto?.caption}
+                          </p>
+                        )}
+                        <p className="text-white/60 text-sm">
+                          Imagem {displayedIndex + 1} de {allPhotos.length}
                         </p>
-                      )}
-                    <p className="text-white/60 text-sm">
-                      Imagem {currentImageIndex + 1} de {allPhotos.length}
-                    </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              </div>
-            </Modal>
-          )}
+              </Modal>
+            )}
+          </AnimatePresence>
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 };
 
-// Link preview minimalista para Wikipedia, com fallback de imagem
-function LinkPreview({
-  href,
-  children,
-  fallbackSrc = "/article-preview.png",
-}: {
-  href: string;
-  children: ReactNode;
-  fallbackSrc?: string;
-}) {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [data, setData] = useState<{ title?: string; description?: string; image?: string; site?: string } | null>(null)
-
-  const url = useMemo(() => {
-    try { return new URL(href) } catch { return null }
-  }, [href])
-
-  const domain = url?.hostname.replace(/^www\./, "") || ""
-
-  useEffect(() => {
-    if (!open || !url) return
-
-    let cancelled = false
-    async function fetchPreview() {
-      setLoading(true)
-      setError(null)
-      try {
-        const isWikipedia = /(^|\.)wikipedia\.org$/.test(url.hostname) && url.pathname.startsWith("/wiki/")
-        if (isWikipedia) {
-          const lang = url.hostname.split(".")[0] || "pt"
-          const titlePath = decodeURIComponent(url.pathname.replace("/wiki/", ""))
-          const api = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(titlePath)}`
-          const res = await fetch(api)
-          if (!res.ok) throw new Error("Falha ao obter resumo da Wikipedia")
-          const json = await res.json()
-          if (cancelled) return
-          setData({
-            title: json.title,
-            description: json.extract || json.description,
-            image: json.thumbnail?.source,
-            site: "Wikipedia",
-          })
-        } else {
-          setData({ title: url.href, description: domain, image: undefined, site: domain })
-        }
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Erro ao carregar preview")
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    fetchPreview()
-    return () => { cancelled = true }
-  }, [open, url, domain])
-
-  const previewImage = data?.image || fallbackSrc
-
-  return (
-    <HoverCard open={open} onOpenChange={setOpen}>
-      <HoverCardTrigger asChild>
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-semibold underline underline-offset-4 decoration-white/40 hover:decoration-[#ff2a2a] hover:text-[#ff2a2a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff2a2a]/60 rounded-sm"
-          aria-label={`Abrir ${domain || "link"} em nova aba`}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setOpen(false)}
-        >
-          {children}
-        </a>
-      </HoverCardTrigger>
-      <HoverCardContent className="w-80 p-3">
-        <div className="flex items-start gap-3">
-          <div className="relative w-16 h-16 shrink-0 overflow-hidden rounded-md bg-white/5">
-            <img
-              src={previewImage}
-              alt={data?.title ? `Prévia: ${data.title}` : "Prévia do artigo"}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              onError={(e) => {
-                const img = e.currentTarget as HTMLImageElement
-                if (img.src !== window.location.origin + fallbackSrc) {
-                  img.src = fallbackSrc
-                }
-              }}
-            />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-white truncate" title={data?.title || domain}>
-              {data?.title || domain}
-            </p>
-            <p className="text-xs text-white/70 mt-1 line-clamp-3">
-              {loading ? "Carregando prévia…" : (data?.description || (error ? "Não foi possível carregar a prévia." : domain))}
-            </p>
-          </div>
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  )
-}
+// Removido: LinkPreview (Wikipedia) e dependências associadas

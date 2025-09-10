@@ -152,8 +152,10 @@ const Index = () => {
         </motion.div>
         <div className="mt-8" />
         <div className="cv-auto"><AttractionsSection /></div>
-        <div className="cv-auto"><MapSection /></div>
-        <div className="cv-auto"><InteractivitySection /></div>
+        {/* Removido cv-auto para evitar adiamento do iframe (Safari/iOS) */}
+        <MapSection />
+        {/* Removido cv-auto para evitar adiamento do iframe (Safari/iOS) */}
+        <InteractivitySection />
         {/* Mural do Caos - imediatamente abaixo da seção Interativa */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
