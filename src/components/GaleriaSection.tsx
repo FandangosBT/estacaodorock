@@ -453,7 +453,7 @@ const handleCaptionScroll = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
-            className="relative z-10 w-full max-w-[min(1200px,calc(100vw-2rem))] max-h-[92vh] flex flex-col overflow-hidden rounded-2xl"
+            className="relative z-10 w-full max-w-[min(1200px,calc(100vw-2rem))] max-h-[92vh] flex flex-col overflow-auto md:overflow-hidden rounded-2xl"
             initial={{ opacity: 0, scale: 0.95, rotateX: 8, y: 12 }}
             animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, rotateX: 4, y: -6 }}
@@ -555,9 +555,12 @@ const handleCaptionScroll = () => {
                 {/* Photo */}
                 <img 
                   src={photo.thumb}
+                  srcSet={`${photo.thumb} 320w, ${photo.thumb} 480w, ${photo.original} 800w`}
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 33vw"
                   alt={photo.caption || `Foto ${photo.id}`}
                   className="w-full h-auto object-cover aspect-square"
                   loading="lazy"
+                  decoding="async"
                 />
 
                 {/* Removido: botões de curtir nas thumbs */}
@@ -585,7 +588,7 @@ const handleCaptionScroll = () => {
                   {/* Container da Imagem - Crossfade suave (overlay da anterior sobre a nova) */}
                   <div
                     ref={imageContainerRef}
-                    className="relative flex items-center justify-center w-full max-h-[85vh] px-2 md:px-4"
+                    className="relative flex items-center justify-center w-full max-h-[85vh] px-2 md:px-4 overflow-hidden"
                     onTouchStart={handleTouchStart}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
@@ -605,12 +608,17 @@ const handleCaptionScroll = () => {
                     <img
                       ref={activeImageRef}
                       src={currentPhoto?.original}
+                      srcSet={currentPhoto ? `${currentPhoto.thumb} 640w, ${currentPhoto.original} 1200w` : undefined}
+                      sizes="(max-width: 768px) 92vw, 80vw"
                       alt={currentPhoto?.caption || `Foto ${displayedIndex + 1}`}
                       className="w-auto h-auto max-h-full max-w-full object-contain shadow-2xl select-none"
                       onLoad={() => setBaseLoaded(true)}
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
                       }}
+                      decoding="async"
+                      loading="eager"
+                      fetchpriority="high"
                       draggable={false}
                     />
 
@@ -627,8 +635,13 @@ const handleCaptionScroll = () => {
                         <img
                           ref={overlayImageRef}
                           src={allPhotos[prevIndex]?.original}
+                          srcSet={`${allPhotos[prevIndex]?.thumb} 640w, ${allPhotos[prevIndex]?.original} 1200w`}
+                          sizes="(max-width: 768px) 92vw, 80vw"
                           alt={allPhotos[prevIndex!]?.caption || `Foto ${prevIndex + 1}`}
                           className="w-auto h-auto max-h-full max-w-full object-contain shadow-2xl select-none"
+                          decoding="async"
+                          loading="eager"
+                          fetchpriority="low"
                           draggable={false}
                         />
                       </div>
