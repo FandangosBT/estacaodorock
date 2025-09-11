@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Camera, ChevronLeft, ChevronRight, X, Download } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { HoverImageGallery } from '@/components/ui/hover-image-gallery';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -127,6 +127,10 @@ export const GaleriaSection = () => {
   // Estado unificado para todas as fotos (grid + modal)
   const [allPhotos, setAllPhotos] = useState<GalleryPhoto[]>([]);
   const [showModal, setShowModal] = useState(false);
+  // Grid completo dentro do modal
+  const [gridCount, setGridCount] = useState(60);
+  const gridSentinelRef = useRef<HTMLDivElement | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
   // Índice alvo (pedido pelo usuário)
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   // Índice efetivamente exibido (para crossfade suave)
@@ -134,6 +138,8 @@ export const GaleriaSection = () => {
   const [prevIndex, setPrevIndex] = useState<number | null>(null);
   const [baseLoaded, setBaseLoaded] = useState(false);
   const [fadingOverlay, setFadingOverlay] = useState(false);
+  // Fonte da imagem de overlay (pode ser o thumb ao abrir a viewer)
+  const [overlaySrc, setOverlaySrc] = useState<string | null>(null);
   // Portal root element for Modal para evitar overflow/transform em iOS
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
   useEffect(() => {
@@ -152,6 +158,15 @@ export const GaleriaSection = () => {
         el.parentNode.removeChild(el);
       }
     };
+  }, []);
+
+  // Dev helper: abrir o modal automaticamente com hash #openGallery (somente em dev)
+  useEffect(() => {
+    if (import.meta.env.DEV && typeof window !== 'undefined' && window.location.hash.includes('openGallery')) {
+      setShowModal(true);
+      setViewerOpen(false);
+      setTimeout(() => { try { modalRef.current?.scrollTo?.({ top: 0 }); } catch {} }, 50);
+    }
   }, []);
 
   // Carregar manifest da galeria 2025
@@ -218,6 +233,7 @@ export const GaleriaSection = () => {
   // Derivar fotos da grid a partir do estado unificado (primeiras 6)
   const gridPhotos = allPhotos.slice(0, 6);
 
+
   // Função unificada para curtir (funciona tanto na grid quanto no modal)
   const handleLike = (photoIndex: number, isGridPhoto = false) => {
     if (isGridPhoto) {
@@ -249,7 +265,9 @@ export const GaleriaSection = () => {
   const startTransitionTo = (nextIdx: number) => {
     if (!allPhotos.length) return;
     if (nextIdx === displayedIndex) return;
+    // Usa a imagem atual como overlay durante a transição
     setPrevIndex(displayedIndex);
+    setOverlaySrc(allPhotos[displayedIndex]?.original || null);
     setDisplayedIndex(nextIdx);
     setBaseLoaded(false);
     setFadingOverlay(false);
@@ -269,10 +287,22 @@ export const GaleriaSection = () => {
 
   const openModal = () => {
     setShowModal(true);
+    setViewerOpen(false);
   };
 
   const closeModal = () => {
     setShowModal(false);
+    setViewerOpen(false);
+  };
+
+  const openViewerAt = (idx: number) => {
+    // Exibe o thumb imediatamente como overlay enquanto carrega o original
+    setDisplayedIndex(idx);
+    setPrevIndex(idx);
+    setOverlaySrc(allPhotos[idx]?.thumb || null);
+    setBaseLoaded(false);
+    setFadingOverlay(false);
+    setViewerOpen(true);
   };
 
   // Swipe em dispositivos touch (modal)
@@ -357,7 +387,7 @@ export const GaleriaSection = () => {
       if (container) container.style.height = '';
       if (modalRef.current) modalRef.current.style.width = '';
     };
-  }, [showModal, displayedIndex, baseLoaded]);
+  }, [showModal, viewerOpen, displayedIndex, baseLoaded]);
 
   // Navegação por teclado e foco inicial
   useEffect(() => {
@@ -366,15 +396,19 @@ export const GaleriaSection = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.key) {
         case 'Escape':
-          closeModal();
+          if (viewerOpen) {
+            setViewerOpen(false);
+          } else {
+            closeModal();
+          }
           break;
         case 'ArrowLeft':
           event.preventDefault();
-          prevImage();
+          if (viewerOpen) prevImage();
           break;
         case 'ArrowRight':
           event.preventDefault();
-          nextImage();
+          if (viewerOpen) nextImage();
           break;
       }
     };
@@ -395,7 +429,7 @@ export const GaleriaSection = () => {
       document.removeEventListener('keydown', handleKeyDown);
       clearTimeout(focusTimeout);
     };
-  }, [showModal]);
+  }, [showModal, viewerOpen]);
 
   const currentPhoto = allPhotos[displayedIndex];
 const isLongCaption = false; // sem metadados longos por enquanto
@@ -434,6 +468,23 @@ useEffect(() => {
     }
   }, [prevIndex, baseLoaded]);
 
+  // Grid incremental: observar sentinela e aumentar contagem
+  useEffect(() => {
+    if (!showModal) return;
+    const el = gridSentinelRef.current;
+    if (!el) return;
+    const step = 60;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setGridCount((c) => Math.min((allPhotos?.length || 0), c + step));
+        }
+      });
+    }, { root: null, rootMargin: '200px 0px', threshold: 0.01 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [showModal, allPhotos?.length]);
+
 const handleCaptionScroll = () => {
   const el = captionRef.current;
   if (!el) return;
@@ -456,17 +507,17 @@ const handleCaptionScroll = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 [perspective:800px] [transform-style:preserve-3d]"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 transform-gpu will-change-transform [backface-visibility:hidden]"
         >
           {/* Overlay animado com blur */}
           <motion.div
-            className="absolute inset-0 bg-black/70 backdrop-blur-md"
+            className="absolute inset-0 bg-black/70"
             aria-hidden="true"
             onClick={closeModal}
-            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            animate={{ opacity: 1, backdropFilter: 'blur(12px)' }}
-            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
           />
 
           {/* Card com borda gradiente e glassmorphism */
@@ -477,14 +528,14 @@ const handleCaptionScroll = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
-            className="relative z-10 w-full max-w-[min(1200px,calc(100vw-2rem))] max-h-[92vh] flex flex-col overflow-auto md:overflow-hidden rounded-2xl"
+            className="relative z-10 w-full max-w-[min(1200px,calc(100vw-2rem))] h-[92vh] max-h-[92vh] flex flex-col min-h-0 rounded-2xl"
             initial={{ opacity: 0, scale: 0.95, rotateX: 8, y: 12 }}
             animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, rotateX: 4, y: -6 }}
             transition={{ type: 'spring', stiffness: 260, damping: 22 }}
           >
-            <div className="p-[1px] rounded-2xl bg-gradient-to-r from-[#ff2a2a] via-[#ffbd00] to-[#ff2a2a]">
-              <div className="relative bg-black/70 backdrop-blur-xl border border-white/10 rounded-2xl">
+            <div className="p-[1px] h-full rounded-2xl bg-gradient-to-r from-[#ff2a2a] via-[#ffbd00] to-[#ff2a2a]">
+              <div className="relative h-full bg-black/70 border border-white/10 rounded-2xl flex flex-col min-h-0">
                 {/* Brilho superior sutil */}
                 <div
                   className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-white/10 to-transparent rounded-t-2xl"
@@ -497,27 +548,21 @@ const handleCaptionScroll = () => {
                     {title}
                   </h2>
                   <div className="flex items-center gap-2">
-                    {currentPhoto && (
-                      <a
-                        href={currentPhoto.download}
-                        download
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 focus:ring-2 focus:ring-white/40 focus:outline-none"
-                        aria-label="Baixar imagem original"
-                      >
-                        <Download className="w-5 h-5" />
-                      </a>
-                    )}
                     <button
                       ref={closeButtonRef}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        closeModal();
+                        // Se o viewer estiver aberto, fecha apenas o viewer e retorna ao grid
+                        if (viewerOpen) {
+                          setViewerOpen(false);
+                        } else {
+                          // Caso contrário, fecha o modal completo
+                          closeModal();
+                        }
                       }}
                       className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 focus:ring-2 focus:ring-white/40 focus:outline-none"
-                      aria-label="Fechar galeria (pressione ESC)"
+                      aria-label={viewerOpen ? "Fechar visualização e voltar ao grid" : "Fechar galeria (pressione ESC)"}
                       type="button"
                     >
                       <X className="w-5 h-5" />
@@ -608,126 +653,123 @@ const handleCaptionScroll = () => {
           <AnimatePresence initial={false} mode="wait">
             {showModal && (
               <Modal title="Galeria Completa">
-                <div className="flex flex-col flex-1 min-h-0">
-                  {/* Container da Imagem - Crossfade suave (overlay da anterior sobre a nova) */}
-                  <div
-                    ref={imageContainerRef}
-                    className="relative flex items-center justify-center w-full max-h-[85vh] px-2 md:px-4 overflow-hidden"
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                  >
-                    {/* Seta Esquerda - Posição Fixa */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); prevImage(); }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-black/70 text-white hover:bg-black/90 transition-all duration-200 focus:ring-2 focus:ring-white/30 focus:outline-none shadow-lg"
-                      aria-label="Imagem anterior (seta esquerda)"
-                      style={{ minWidth: '44px', minHeight: '44px' }}
-                      type="button"
-                    >
-                      <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
-                    </button>
-
-                    {/* Imagem base (nova) - não absoluta: define a largura do modal */}
-                    <img
-                      ref={activeImageRef}
-                      src={currentPhoto?.original}
-                      srcSet={currentPhoto ? `${currentPhoto.thumb} 640w, ${currentPhoto.original} 1200w` : undefined}
-                      sizes="(max-width: 768px) 92vw, 80vw"
-                      alt={currentPhoto?.caption || `Foto ${displayedIndex + 1}`}
-                      className="w-auto h-auto max-h-full max-w-full object-contain shadow-2xl select-none"
-                      onLoad={() => setBaseLoaded(true)}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
-                      }}
-                      decoding="async"
-                      loading="eager"
-                      fetchPriority="high"
-                      draggable={false}
-                    />
-
-                    {/* Overlay com a imagem anterior (fade-out) */}
-                    {prevIndex !== null && (
-                      <div
-                        className={`absolute inset-0 grid place-items-center transition-opacity duration-300 ease-in-out ${fadingOverlay ? 'opacity-0' : 'opacity-100'}`}
-                        onTransitionEnd={() => {
-                          // Finaliza overlay apos o fade-out
-                          setPrevIndex(null);
-                          setFadingOverlay(false);
-                        }}
-                      >
-                        <img
-                          ref={overlayImageRef}
-                          src={allPhotos[prevIndex]?.original}
-                          srcSet={`${allPhotos[prevIndex]?.thumb} 640w, ${allPhotos[prevIndex]?.original} 1200w`}
-                          sizes="(max-width: 768px) 92vw, 80vw"
-                          alt={allPhotos[prevIndex!]?.caption || `Foto ${prevIndex + 1}`}
-                          className="w-auto h-auto max-h-full max-w-full object-contain shadow-2xl select-none"
-                          decoding="async"
-                          loading="eager"
-                          fetchPriority="low"
-                          draggable={false}
-                        />
-                      </div>
-                    )}
-
-                    {/* Seta Direita - Posição Fixa */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-black/70 text-white hover:bg-black/90 transition-all duration-200 focus:ring-2 focus:ring-white/30 focus:outline-none shadow-lg"
-                      aria-label="Próxima imagem (seta direita)"
-                      style={{ minWidth: '44px', minHeight: '44px' }}
-                      type="button"
-                    >
-                      <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
-                    </button>
-
-                    {/* Contador - Posição Consistente */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg z-10">
-                      {displayedIndex + 1} / {allPhotos.length}
-                    </div>
-                  </div>
-
-                  {/* Info da Imagem - Layout Melhorado */}
-                  <div ref={footerElRef} className="p-4 md:p-6 border-t border-white/10 bg-black/50 backdrop-blur-sm flex-shrink-0">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        {isLongCaption ? (
-                          <div className="relative">
-                            <div
-                              id="caption-scroll"
-                              ref={captionRef}
-                              onScroll={handleCaptionScroll}
-                              role="region"
-                              aria-label="Legenda completa (role para ver tudo)"
-                              tabIndex={0}
-                              className="text-white font-medium mb-2 text-base leading-relaxed max-h-[45vh] sm:max-h-40 md:max-h-48 overflow-y-auto pr-2 touch-pan-y overscroll-y-contain focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-                              style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}
+                <div className="relative flex flex-col flex-1 min-h-0">
+                  {/* GRID de thumbs rolável */}
+                  <div data-testid="gallery-grid-scroll" className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-3 pt-3 pb-4 transform-gpu will-change-transform [backface-visibility:hidden] [contain:paint]" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
+                    {allPhotos.length === 0 ? (
+                      <div className="text-center text-white/70 py-10">Carregando fotos…</div>
+                    ) : (
+                      <ul role="list" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                        {allPhotos.slice(0, gridCount).map((p, idx) => (
+                          <li key={idx}>
+                            <button
+                              type="button"
+                              onClick={() => openViewerAt(idx)}
+                              className="group w-full h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/60 rounded-md overflow-hidden border border-white/10 bg-black/30"
                             >
-                              {currentPhoto?.caption}
-                            </div>
-                            {showIndicator && (
-                              <div
-                                aria-hidden="true"
-                                className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-black/60 flex items-end justify-end px-2 pb-1 transition-opacity duration-300"
-                              >
-                                <span className="text-white/70 text-[11px] uppercase tracking-wide bg-black/30 rounded px-1.5 py-0.5">
-                                  role para ver tudo
-                                </span>
+                              <div className="relative aspect-[16/10] overflow-hidden">
+                                <img
+                                  src={p.thumb}
+                                  alt={p.caption || `Foto ${idx + 1}`}
+                                  loading="lazy"
+                                  decoding="async"
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                               </div>
-                            )}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {allPhotos.length > gridCount && (
+                      <div ref={gridSentinelRef} className="h-8 w-full" aria-hidden="true" />
+                    )}
+                  </div>
+
+                  {/* LIGHTBOX overlay dentro do modal */}
+                  {viewerOpen && (
+                    <div className="absolute inset-0 z-20 bg-black/60">
+                      <div className="absolute inset-0 flex flex-col">
+                        <div
+                          ref={imageContainerRef}
+                          className="relative flex items-center justify-center w-full flex-1 px-2 md:px-4 transform-gpu will-change-transform [backface-visibility:hidden]"
+                          onTouchStart={handleTouchStart}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={handleTouchEnd}
+                        >
+                          <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/80 text-white px-3 py-1 rounded-full text-xs md:text-sm font-medium shadow-md z-10">
+                            {displayedIndex + 1} / {allPhotos.length}
                           </div>
-                        ) : (
-                          <p className="text-white font-medium mb-2 text-base leading-relaxed">
-                            {currentPhoto?.caption}
-                          </p>
-                        )}
-                        <p className="text-white/60 text-sm">
-                          Imagem {displayedIndex + 1} de {allPhotos.length}
-                        </p>
+
+                          <button
+                            onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-black/70 text-white hover:bg-black/90 transition-all duration-200 focus:ring-2 focus:ring-white/30 focus:outline-none shadow-lg"
+                            aria-label="Imagem anterior"
+                            style={{ minWidth: '44px', minHeight: '44px' }}
+                            type="button"
+                          >
+                            <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+                          </button>
+
+                          <img
+                            ref={activeImageRef}
+                            src={allPhotos[displayedIndex]?.original}
+                            alt={allPhotos[displayedIndex]?.caption || `Foto ${displayedIndex + 1}`}
+                            className="w-auto h-auto max-h-full max-w-full object-contain shadow-2xl select-none transform-gpu [backface-visibility:hidden] will-change-transform"
+                            onLoad={() => setBaseLoaded(true)}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+                            draggable={false}
+                          />
+
+                          {prevIndex !== null && (
+                            <div
+                              className={`absolute inset-0 grid place-items-center transition-opacity duration-300 ease-in-out pointer-events-none transform-gpu [backface-visibility:hidden] will-change-opacity ${fadingOverlay ? 'opacity-0' : 'opacity-100'}`}
+                              onTransitionEnd={() => { setPrevIndex(null); setFadingOverlay(false); setOverlaySrc(null); }}
+                            >
+                              <img
+                                ref={overlayImageRef}
+                                src={overlaySrc || allPhotos[prevIndex]?.original}
+                                alt={allPhotos[prevIndex!]?.caption || `Foto ${prevIndex + 1}`}
+                                className="w-auto h-auto max-h-full max-w-full object-contain shadow-2xl select-none transform-gpu [backface-visibility:hidden] will-change-transform"
+                                draggable={false}
+                              />
+                            </div>
+                          )}
+
+                          <button
+                            onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 md:p-3 rounded-full bg-black/70 text-white hover:bg-black/90 transition-all duration-200 focus:ring-2 focus:ring-white/30 focus:outline-none shadow-lg"
+                            aria-label="Próxima imagem"
+                            style={{ minWidth: '44px', minHeight: '44px' }}
+                            type="button"
+                          >
+                            <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+                          </button>
+                        </div>
+
+                        <div ref={footerElRef} className="p-3 md:p-4 border-t border-white/10 bg-black/70">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white/90 font-medium text-sm md:text-base leading-relaxed">
+                                {allPhotos[displayedIndex]?.caption}
+                              </p>
+                            </div>
+                            <div className="shrink-0 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setViewerOpen(false)}
+                                className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 focus:ring-2 focus:ring-white/40 focus:outline-none"
+                                aria-label="Fechar visualização"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </Modal>
             )}
