@@ -130,6 +130,12 @@ export const GaleriaSection = () => {
   // Grid completo dentro do modal
   const [gridCount, setGridCount] = useState(60);
   const gridSentinelRef = useRef<HTMLDivElement | null>(null);
+  const gridScrollRef = useRef<HTMLDivElement | null>(null);
+  // Para animar apenas os itens recém-carregados
+  const prevGridCountRef = useRef(gridCount);
+  useEffect(() => {
+    prevGridCountRef.current = gridCount;
+  }, [gridCount]);
   const [viewerOpen, setViewerOpen] = useState(false);
   // Índice alvo (pedido pelo usuário)
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -175,8 +181,14 @@ export const GaleriaSection = () => {
     const controller = new AbortController();
     async function load() {
       try {
-        const res = await fetch('/galeria/2025/manifest.json', { signal: controller.signal });
-        if (!res.ok) throw new Error('Falha ao carregar manifest da galeria');
+        const ts = import.meta.env.DEV ? `?ts=${Date.now()}` : '';
+        const url = `${import.meta.env.BASE_URL || '/'}galeria/2025/manifest.json${ts}`.replace(/\/+/, '/');
+        const res = await fetch(url, { signal: controller.signal, cache: 'no-store' as RequestCache });
+        if (!res.ok) throw new Error(`Falha ao carregar manifest da galeria (${res.status})`);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+          throw new Error('Manifest não é JSON (content-type inesperado)');
+        }
         const manifest: Manifest = await res.json();
         if (cancelled) return;
         const photos: GalleryPhoto[] = manifest.items.map((it, idx) => ({
@@ -190,8 +202,27 @@ export const GaleriaSection = () => {
         }));
         setAllPhotos(photos);
       } catch (e) {
-        // fallback silencioso: mantém vazio; poderia exibir um aviso no futuro
-        console.error(e);
+        // Log explícito em DEV para facilitar debug
+        console.error('Erro ao carregar manifest da galeria:', e);
+        if (import.meta.env.DEV) {
+          // Em dev, tenta um fallback simples sem cache-busting
+          try {
+            const res2 = await fetch('/galeria/2025/manifest.json', { signal: controller.signal, cache: 'no-store' as RequestCache });
+            if (res2.ok) {
+              const manifest2: Manifest = await res2.json();
+              const photos2: GalleryPhoto[] = manifest2.items.map((it, idx) => ({
+                id: idx + 1,
+                thumb: it.thumb,
+                original: it.original,
+                download: it.download || it.original,
+                likes: 0,
+                liked: false,
+                caption: ''
+              }));
+              if (!cancelled) setAllPhotos(photos2);
+            }
+          } catch {}
+        }
       }
     }
     load();
@@ -226,12 +257,38 @@ export const GaleriaSection = () => {
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const activeImageRef = useRef<HTMLImageElement>(null);
   const overlayImageRef = useRef<HTMLImageElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const touchStartTime = useRef<number>(0);
 
   // Derivar fotos da grid a partir do estado unificado (primeiras 6)
   const gridPhotos = allPhotos.slice(0, 6);
+
+  // Preservar posição do scroll ao carregar mais itens no grid do modal
+  const gridScrollStateRef = useRef<{ pending: boolean; top: number; height: number }>({ pending: false, top: 0, height: 0 });
+
+  const recordGridScrollState = () => {
+    const el = gridScrollRef.current;
+    if (!el) return;
+    gridScrollStateRef.current = { pending: true, top: el.scrollTop, height: el.scrollHeight };
+  };
+
+  const restoreGridScrollState = () => {
+    const el = gridScrollRef.current;
+    const st = gridScrollStateRef.current;
+    if (!el || !st.pending) return;
+    const delta = el.scrollHeight - st.height;
+    if (delta > 0) {
+      el.scrollTop = st.top + delta;
+    }
+    gridScrollStateRef.current.pending = false;
+  };
+
+  useEffect(() => {
+    // após aumentar gridCount, restaurar a posição do scroll
+    restoreGridScrollState();
+  }, [gridCount]);
 
 
   // Função unificada para curtir (funciona tanto na grid quanto no modal)
@@ -413,14 +470,14 @@ export const GaleriaSection = () => {
       }
     };
 
-    // Foco inicial no botão fechar para acessibilidade
+    // Foco inicial no botão fechar para acessibilidade (apenas quando viewer NÃO está aberto)
     const focusCloseButton = () => {
-      if (closeButtonRef.current) {
+      if (!viewerOpen && closeButtonRef.current) {
         closeButtonRef.current.focus();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown, { passive: false });
     
     // Timeout para garantir que o modal foi renderizado
     const focusTimeout = setTimeout(focusCloseButton, 100);
@@ -429,7 +486,15 @@ export const GaleriaSection = () => {
       document.removeEventListener('keydown', handleKeyDown);
       clearTimeout(focusTimeout);
     };
-  }, [showModal, viewerOpen]);
+  }, [showModal, viewerOpen, displayedIndex, allPhotos.length]);
+
+  // Ao abrir o viewer (lightbox), focar o overlay para captar setas do teclado
+  useEffect(() => {
+    if (viewerOpen) {
+      const id = requestAnimationFrame(() => overlayRef.current?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+  }, [viewerOpen]);
 
   const currentPhoto = allPhotos[displayedIndex];
 const isLongCaption = false; // sem metadados longos por enquanto
@@ -471,17 +536,23 @@ useEffect(() => {
   // Grid incremental: observar sentinela e aumentar contagem
   useEffect(() => {
     if (!showModal) return;
-    const el = gridSentinelRef.current;
-    if (!el) return;
+    const sentinel = gridSentinelRef.current;
+    const rootEl = gridScrollRef.current; // observar dentro do container rolável
+    if (!sentinel || !rootEl) return;
     const step = 60;
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setGridCount((c) => Math.min((allPhotos?.length || 0), c + step));
-        }
-      });
-    }, { root: null, rootMargin: '200px 0px', threshold: 0.01 });
-    obs.observe(el);
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // registrar posição antes de expandir
+            recordGridScrollState();
+            setGridCount((c) => Math.min((allPhotos?.length || 0), c + step));
+          }
+        });
+      },
+      { root: rootEl, rootMargin: '0px 0px 300px 0px', threshold: 0.01 }
+    );
+    obs.observe(sentinel);
     return () => obs.disconnect();
   }, [showModal, allPhotos?.length]);
 
@@ -655,41 +726,78 @@ const handleCaptionScroll = () => {
               <Modal title="Galeria Completa">
                 <div className="relative flex flex-col flex-1 min-h-0">
                   {/* GRID de thumbs rolável */}
-                  <div data-testid="gallery-grid-scroll" className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-3 pt-3 pb-4 transform-gpu will-change-transform [backface-visibility:hidden] [contain:paint]" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
+                  <div ref={gridScrollRef} data-testid="gallery-grid-scroll" className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-3 pt-3 pb-4 transform-gpu will-change-transform [backface-visibility:hidden] [contain:paint]" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
                     {allPhotos.length === 0 ? (
                       <div className="text-center text-white/70 py-10">Carregando fotos…</div>
                     ) : (
-                      <ul role="list" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                        {allPhotos.slice(0, gridCount).map((p, idx) => (
-                          <li key={idx}>
-                            <button
-                              type="button"
-                              onClick={() => openViewerAt(idx)}
-                              className="group w-full h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/60 rounded-md overflow-hidden border border-white/10 bg-black/30"
+                      <motion.ul
+                        role="list"
+                        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"
+                        layout
+                      >
+                        {allPhotos.slice(0, gridCount).map((p, idx) => {
+                          const prevCount = prevGridCountRef.current ?? 0;
+                          const isNew = idx >= prevCount;
+                          const delayIndex = Math.max(0, idx - prevCount);
+                          return (
+                            <motion.li
+                              key={p.original}
+                              layout
+                              initial={isNew ? { opacity: 0, y: 6, scale: 0.99 } : false}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              transition={{ duration: 0.2, ease: 'easeOut', delay: isNew ? Math.min(delayIndex, 8) * 0.01 : 0 }}
                             >
-                              <div className="relative aspect-[16/10] overflow-hidden">
-                                <img
-                                  src={p.thumb}
-                                  alt={p.caption || `Foto ${idx + 1}`}
-                                  loading="lazy"
-                                  decoding="async"
-                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                              </div>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
+                              <button
+                                type="button"
+                                onClick={() => openViewerAt(idx)}
+                                className="group w-full h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/60 rounded-md overflow-hidden border border-white/10 bg-black/30"
+                              >
+                                <div className="relative aspect-[16/10] overflow-hidden">
+                                  <img
+                                    src={p.thumb}
+                                    alt={p.caption || `Foto ${idx + 1}`}
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  />
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                </div>
+                              </button>
+                            </motion.li>
+                          );
+                        })}
+                      </motion.ul>
                     )}
                     {allPhotos.length > gridCount && (
-                      <div ref={gridSentinelRef} className="h-8 w-full" aria-hidden="true" />
+                      <>
+                        <div ref={gridSentinelRef} className="h-8 w-full" aria-hidden="true" />
+                        <div className="pt-2 flex justify-center">
+                          <button
+                            type="button"
+                            className="px-4 py-2 text-sm rounded bg-white/10 text-white hover:bg-white/20 transition"
+                            onClick={() => { recordGridScrollState(); setGridCount((c) => Math.min((allPhotos?.length || 0), c + 60)); }}
+                          >
+                            Carregar mais
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
 
                   {/* LIGHTBOX overlay dentro do modal */}
                   {viewerOpen && (
-                    <div className="absolute inset-0 z-20 bg-black/60">
+                    <div
+                      ref={overlayRef}
+                      className="absolute inset-0 z-20 bg-black/60"
+                      onKeyDown={(e) => {
+                        if (!viewerOpen) return;
+                        if (e.key === 'ArrowLeft') { e.preventDefault(); prevImage(); }
+                        if (e.key === 'ArrowRight') { e.preventDefault(); nextImage(); }
+                      }}
+                      onMouseDown={() => overlayRef.current?.focus()}
+                      onClick={() => overlayRef.current?.focus()}
+                      tabIndex={0}
+                    >
                       <div className="absolute inset-0 flex flex-col">
                         <div
                           ref={imageContainerRef}

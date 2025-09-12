@@ -8,7 +8,9 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "gen:manifest:2025": "node scripts/genManifest.mjs public/galeria/2025 --year 2025 --basePath /galeria/2025",
+    "rename:photos:2025": "node scripts/rename-photos.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
